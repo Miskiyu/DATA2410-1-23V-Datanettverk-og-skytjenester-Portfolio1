@@ -28,64 +28,8 @@ def check_port(val):
     
 
 
-"""Optional arguments"""
-"""må lage en parser"""
-parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
-
-"""Må deretter lage fire argumenter  for server """
-
-#lager server 
-parser.add_argument('-s','--server', action='store_true')
-
-#Port
-parser.add_argument('-p','--port', type=check_port)
-
-#IP adressec
-
-parser.add_argument('-b','--bind', type=str)
-
-#Lager format
-parser.add_argument('-f','--format',type=str, default='MB')
 
 
-"""Client"""
-
-parser2= argparse.ArgumentParser(description="positional arguments", epilog="End of help")
-
-#client
-parser.add_argument('-c','--client', action='store_true')
-
-#ip
-parser.add_argument('-I', '--serverip',type=str)
-
-#port
-parser.add_argument('-p','--port',type=int)
-
-#time
-parser.add_argument('-t','--time', type=int)
-
-#format
-parser.add_argument('-f','--format',type=str)
-
-#interval
-parser.add_argument('-i','--interval', type=int)
-
-#paralell
-parser.add_argument('-P','--parallel',type=int)
-
-#parser args
-args = parser.parse_args()
-
-"""Print """
-print('your port number is:',args.port)
-print('your ip adresse er:', args.bind)
-
-if args.server:
-    print("A simpleperf server is listening on port",args.port)
-
-"""for å koble serevr"""
-host = args.bind
-port = args.port
 
 def server(host,port):
     #lager en TCP/IP socket og velger type adresse og strem 
@@ -117,12 +61,71 @@ def server(host,port):
 
 
 if __name__ =="__main__":
-    server(args.bind,args.port)
+    
+    parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
 
 
-##client 
+
+#lager server 
+    parser.add_argument('-s','--server', action='store_true')
+
+#Port
+    parser.add_argument('-p','--port', type=check_port)
+
+#IP adresse
+
+    parser.add_argument('-b','--bind', type=str, default='heo')
+
+#Lager format
+    parser.add_argument('-f','--format',type=str, default='MB')
+
+
+#parser args
+    args = parser.parse_args()
+
+    
+    if args.server:
+        print("A simpleperf server is listening on port",args.port)
+        host = args.bind
+        port = args.port
+        server(host,port)
+
+"client"
+
+def send_melding(host, port, tid_valgt ):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host,port))
+
+    #send data
+    data =  b'\x00' * 1000
+    start_tid = time.time()
+    bytes_sendt = 0
+    while time.time() - start_tid < tid_valgt:
+        client_socket.send(data)
+        bytes_sendt += len(data)
+    
+    #Send hade melding og vent 
+    client_socket.send(b'finish')
+    melding_tilbake = client_socket.recv(1024)
+    if melding_tilbake!= b'ack':
+        print('Erro: du har ikke fått tilbake melding fra server ')
+    client_socket.close()
+    tid = time.time() - start_tid
+    bandwidth = bytes_sendt / (tid * 1000000)  # In MB/s
+    print(f'Bandwidth: {bandwidth:.2f} MB/s')
+
+parser = argparse.ArgumentParser(description='Simpleperf client')
+parser.add_argument('-c','--client', action='store_true')
+parser.add_argument('-I','--server_ip',  help='IP address of server')
+parser.add_argument('-p','--server_port', type=int, help='Port number of server')
+parser.add_argument('-t','--time_duration', type=int, help='Duration of data generation in seconds')
+args = parser.parse_args()
 
 
 if args.client:
-    print(f"Simpleperf cliens is connecting to {args.bind} port {args.port}")
+        print("A simpleperf client connection to server {args.server_ip}, port {args.server_port}")
+        send_melding(args.server_ip, args.server_port, args.time_duration)
+
+
+
 
