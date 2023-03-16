@@ -5,7 +5,7 @@ echoes lines until eof when client closes socket; spawns a
 thread to handle each client connection; threads share global 
 memory space with main thread.
 """
-from socket import *
+
 import _thread as thread #importing needed packets
 import socket
 import sys
@@ -13,7 +13,10 @@ import threading #importing needed packets
 import argparse
 import re
 
-liste = [] #List with all clients, needed for the broadcast function
+DISCONNECT = "bye"
+parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
+
+
 
 """Her lager jeg en funksjon som sjekker om porten er valid"""
 def check_port(val):
@@ -34,70 +37,82 @@ def check_ip(val):
         print("this is not valid ip-adress")
         sys.exit()  
 
-def broadcast(client, message): #Broadcast function to broadcast a given message to defined clients
-	client.send((message.encode())) #send the specified client the given message
-	return
 
 def handleClient(connection): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
-	
 	while True:
-		data = connection.recv(1024).decode()   #Decoding recieved message
-		print ("received  message = ", data)   #Printing the recieved message on the server side
-		if (data == "exit"):  #If a cleint sends Exit, the connection is removed from the server
-			liste.remove(connection)  #Removing the connection from the list
-			broadcast(connection, "bye")   #Sending a goodbye message. This is also used to prevent infinite looping in the message recieving thread of the client
+		msg = connection.recv(1000).decode()   #Decoding recieved message
+		print ("received  message = ", msg)   #Printing the recieved message on the server side
+		if (msg== DISCONNECT):  
+			melding_send = DISCONNECT.encode()
+			connection.send((melding_send))
 			break  #Exiting the loop
+		else:
+			melding_send = "Do you want to quit this session?".encode()
 	connection.close() #closing the socket
 
 def server(host, port): #main method
-	serverPort = 12000 #Defining the server port 
-	serverSocket = socket(AF_INET,SOCK_STREAM)  
-	try:
-		serverSocket.bind((host,port)) #binding this socket to this adress
-	except: 
-		print("Bind failed. Error : ") #error message in case something fails
-	serverSocket.listen(1) #Setting up the socket for listening for messages
-	print ('The server is ready to receive') #Printing this message on the server
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.bind((host,port))	
+	sock.listen()
+	print ('A SIMPLEPERF SERVER IS LISTENING ON PORT 1025',port) #Printing this message on the server
 	while True: #always true, this will always loop, and wait for new cleints to connect
-		connectionSocket, addr = serverSocket.accept() #Accepting a new connection
-		thread.start_new_thread(handleClient, (connectionSocket,)) #Creating a new thread for the new connection
-		connectionSocket.send("Welcome to the server. Type Broadcast: followed by your message to broadcast something".encode()) #This message get's sent when a new connection
-		# joins the server
-		for i in liste: #This loops though all existing clients that are connected to the server, and broadcasts the given message to them
-			broadcast(i, "\n En ny klient har koblet seg til")
+		connectionSocket, addr = sock.accept() #Accepting a new connection
+		
+		
 
-parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
-
+def client(host, port):
+	clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	clientSocket.connect((host, port))
+	print("Connected to the server.")
+	while True:
+		msg = input("Enter message (type 'bye' to disconnect): ")
+		clientSocket.send(msg.encode())
+		if msg == DISCONNECT:
+			break
+		data = clientSocket.recv(1000).decode()
+		print("Server response: ", data)
+	clientSocket.close()
 
 #lager server 
 parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
-parser.add_argument('-b','--bind', type=check_ip)
+parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-c','--client', action='store_true')
 args = parser.parse_args()
+host = args.bind
+port = args.port
 
 if __name__ =="__main__":
     if args.server:
-        print("A simpleperf server is listening on port",args.port)
-        host = args.bind
-        port = args.port
         server(host,port)
-	
+    elif args.client:
+          if check_port(port):
+                client(host,port)
 
-	
+clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  #Socket settings. THe first says what kind of adress we are looking for,
 
-def thread1(): #making one function (/thread) for sending messages to the server
-	while True: #this is always true, it always listens for input
-		sentence = input('') #asks for client input
+
+def sendthread():
+	while True: 
+		sentence = input("Enter message (type 'bye' to disconnect): ") #asks for client input
 		clientSocket.send(sentence.encode()) #sending the input to the server
-		if (sentence == "exit"): #if the inpout is exit, the client stops
+		if (sentence == DISCONNECT): #if the inpout is exit, the client stops
+			msg = sentence.encod()
+			clientSocket.send(msg)
 			break #stops the loop
+		else:
+			msg = sentence.encode()
+			clientSocket.send(msg)
 def thread2(): #another function/thread to listen for messages
-	while True: #always true, always lsitening for messages
+	msg =""
+	while True: 
 		received_line = clientSocket.recv(1024).decode() #When a message is recieved from the client, it is decoded. The message has 1024 bytes.
 		print ('\nFrom Server:', received_line) #prints the menssage recieved from the server
-		if (received_line == "bye"): #if the message is "bye", the thread stops. This is done to prevent infinate looping
+		if (received_line == DISCONNECT): #if the message is "bye", the thread stops. This is done to prevent infinate looping
 			break #break as before
+		else:
+			print(msg)
+	clientSocket.close()
 
 t1 = threading.Thread(target=thread1) #making a thread
 
@@ -114,3 +129,4 @@ except:
 
 t1.start() #starting thread 1
 thread2() #and thread 2 (the ) is already running, so we just use a normal function.
+
