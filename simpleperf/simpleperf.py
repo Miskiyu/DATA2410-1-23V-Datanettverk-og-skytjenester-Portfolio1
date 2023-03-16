@@ -13,6 +13,8 @@ import socket
 import time
 import re
 DISCONNECT = "bye"
+message_length = '0'*1000  #hvordan man lager 1000 bytes
+
 
 """SEERVER MODE"""
 
@@ -45,6 +47,7 @@ def server(host,port):
     sock.bind((host,port))
     sock.listen()
     print(f"Hører på on {host}:{port}")
+    bytes_recived = b""
 
     while True:
         connection, addr =sock.accept()
@@ -53,7 +56,9 @@ def server(host,port):
             data = connection.recv(1000)
             if not data:
                 break
-            connection.sendall(data)
+            bytes_recived+=data
+        response = "Thanks for the data!"
+        connection.sendall(response)
         connection.close()
 
 parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
@@ -63,7 +68,30 @@ parser = argparse.ArgumentParser(description="positional arguments", epilog="End
 parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
 parser.add_argument('-b','--bind', type=check_ip)
+parser.add_argument('-c','--client', action='store_true')
 args = parser.parse_args()
+
+
+def handle_client(host, port):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host,port))
+    message = input("Enter a message to send to the server: ")
+
+# Send the message to the server in chunks of 1000 bytes
+    message_bytes = message.encode('utf-8')
+    for i in range(0, len(message_bytes), 1000):
+        chunk = message_bytes[i:i+1000]
+        client_socket.sendall(chunk)
+
+    print("Message sent to server.")
+
+# Receive a response from the server
+    response = client_socket.recv(1024).decode('utf-8')
+    print(f"Received response: {response}")
+
+# Close the connection with the server
+    client_socket.close()
+
 
 
 
@@ -74,7 +102,9 @@ if __name__ =="__main__":
         port = args.port
         server(host,port)
     elif(args.client):
-        sock.connect(args.bind,args.port)
+        host = args.bind
+        port = args.port
+        handle_client(host, port)
 
 
 "client"
@@ -100,21 +130,6 @@ def threda2():
 x = '0'*1000  #hvordan man lager 1000 bytes
 print(x)
 """
-
-def handle_client(host, port):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((host,port))
-
-    
-    #Send hade melding og vent 
-    client_socket.send(b'finish')
-    melding_tilbake = client_socket.recv(1024)
-    if melding_tilbake!= b'ack':
-        print('Erro: du har ikke fått tilbake melding fra server ')
-    client_socket.close()
- 
-
-
 
 
 
