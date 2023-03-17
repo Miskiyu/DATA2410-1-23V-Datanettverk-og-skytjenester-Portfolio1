@@ -30,7 +30,7 @@ def check_port(val):
         raise argparse.ArgumentTypeError("Expected an integer but you entred a string")
     
 def check_ip(val):
-    ip = re.match("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}",val)
+    ip = re.match("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$",val)
     if(ip):
         return True
     else:
@@ -69,9 +69,8 @@ parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
 parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-c','--client', action='store_true')
-parser.add_argument('-I', '--server_ip', type=str, help='Server IP address')
-parser.add_argument('-P', '--server_port', type=check_port, help='Server port in the range [1024, 65535]')
-
+parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
+parser.add_argument('-P', '--server_port', type=int, help='The IP address to bind to (default: localhost)')
 args = parser.parse_args()
 host = args.bind
 port = args.port
@@ -104,19 +103,23 @@ def receive_thread(sock): #another function/thread to listen for messages
 
 if args.server:
     server(host,port)
+
 elif args.client:        
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host = args.bind
+    port = args.port
     try:
         sock.connect((args.server_ip,args.server_port))
+	
         print(f"A simpleperf client with IP {args.server_ip}:{args.server_port} is connected with <server IP:port>")
         t1 = threading.Thread(target=send_thread, args=())
         t2 = threading.Thread(target=receive_thread, args=(sock,))
         t1.start()
         t2.start()
-	    
-	    
-	
+        
     except:
-	    print("Feil port nummer endre")
+	    print("Error: failed to connect to server")
+else:
+	print("Error: you must run either in server or client mode")
 	    
 	    
