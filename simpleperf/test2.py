@@ -14,7 +14,7 @@ import argparse
 import re
 
 DISCONNECT = "bye"
-parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
+parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
 message_length = '0'*1000  
 
 
@@ -40,7 +40,7 @@ def check_ip(val):
 
 def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
 	print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
-
+	totea_bytes = 0
 	while True:
 		msg = connection.recv(1000).decode()   #Decoding recieved message
 		print ("received  message = ", msg)   #Printing the recieved message on the server side
@@ -62,16 +62,29 @@ def server(host, port): #main method
 		connectionSocket, addr = sock.accept() #Accepting a new connection
 		thread= threading.Thread(target=handleClient, args =(connectionSocket,addr))
 		thread.start()
-		
 
-#lager server 
-parser.add_argument('-s','--server', action='store_true')
-parser.add_argument('-p','--port', type=check_port)
-parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
-parser.add_argument('-c','--client', action='store_true')
-parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
-parser.add_argument('-P', '--server_port', type=int, help='The IP address to bind to (default: localhost)')
-args = parser.parse_args()
+def calculate_result(format, value):
+    if format == "B":
+        result = value
+    elif format == "KB":
+        result = value / 1024
+    elif format == "MB":
+        result = value / 1024 / 1024
+    else:
+        raise ValueError(f"Invalid format specified: {format}")
+    return result
+
+
+def main():
+    parser.add_argument('-s','--server', action='store_true')
+    parser.add_argument('-p','--port', type=check_port)
+    parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
+    parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
+    parser.add_argument('-c','--client', action='store_true')
+    parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
+    parser.add_argument('-P', '--server_port', type=int, help='The IP address to bind to (default: localhost)')
+    args = parser.parse_args()
+    print(args)
 host = args.bind
 port = args.port
 
@@ -81,12 +94,15 @@ def send_thread():
 		sentence = input("Enter message (type 'bye' to disconnect): ") #asks for client input
 		sock.send(sentence.encode()) #sending the input to the server
 		if (sentence == DISCONNECT): #if the inpout is exit, the client stops
-			msg = sentence.encode()
-			sock.send(msg)
-			break #stops the loop
-		else:
-			msg = sentence.encode()
-			sock.send(msg)
+			message = "Vil du avslutte?(ja/nei):"
+			sock.send(message.encode())
+			response = sock.recv(100).decode().strip().lower()
+			if response == "ja":
+				print("serveren avsluttes")
+				sock.close
+			else:
+				print("Klienten ønsker ikke å avslutte.")
+
 
 def receive_thread(sock): #another function/thread to listen for messages
 	msg =""
