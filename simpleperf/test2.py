@@ -15,7 +15,7 @@ import re
 
 DISCONNECT = "bye"
 parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
-
+message_length = '0'*1000  
 
 
 """Her lager jeg en funksjon som sjekker om porten er valid"""
@@ -39,7 +39,7 @@ def check_ip(val):
 
 
 def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
-	print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with {port}")
+	print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
 
 	while True:
 		msg = connection.recv(1000).decode()   #Decoding recieved message
@@ -69,6 +69,9 @@ parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
 parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-c','--client', action='store_true')
+parser.add_argument('-I', '--server_ip', type=str, help='Server IP address')
+parser.add_argument('-P', '--server_port', type=check_port, help='Server port in the range [1024, 65535]')
+
 args = parser.parse_args()
 host = args.bind
 port = args.port
@@ -88,7 +91,6 @@ def send_thread():
 
 def receive_thread(sock): #another function/thread to listen for messages
 	msg =""
-	transfer_complete= True
 	while True: 
 		received_line = sock.recv(1000).decode() #When a message is recieved from the client, it is decoded. The message has 1024 bytes.
 		print ('\nFrom Server:', received_line) #prints the menssage recieved from the server
@@ -104,14 +106,17 @@ if args.server:
     server(host,port)
 elif args.client:        
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     try:
-        sock.connect((host, port))
-        print("A simpleperf client with IP {host}: {port}> is connected with <server IP:port>")
-        t1 = threading.Thread(target=send_thread)
+        sock.connect((args.server_ip,args.server_port))
+        print(f"A simpleperf client with IP {args.server_ip}:{args.server_port} is connected with <server IP:port>")
+        t1 = threading.Thread(target=send_thread, args=())
         t2 = threading.Thread(target=receive_thread, args=(sock,))
         t1.start()
         t2.start()
+	    
+	    
+	
     except:
 	    print("Feil port nummer endre")
-	
+	    
+	    
