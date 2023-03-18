@@ -13,7 +13,7 @@ import threading #importing needed packets
 import argparse
 import re
 import time
-
+import random
 DISCONNECT = "bye"
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
 message_length = '0'*1000  
@@ -39,91 +39,62 @@ def check_ip(val):
         sys.exit()  
 
 
-def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
+def handleClient(connection, addr):
     print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
+    start_time = 0
+    total = 4
+
+    intervall = 1
     total_bytes_received = 0
-    start_time = time.monotonic()
-    while True:
-        msg = connection.recv(1000).decode()   #Decoding received message
-        if not msg:
-             break
-        total_bytes_received +=len(msg)
-        print(total_bytes_received)
-        print ("received  message = ", msg)   #Printing the received message on the server side
-        if msg == DISCONNECT:  
-            message = "Are you sure you want to disconnect? (yes/no):"
-            connection.send(message.encode())
-            response = connection.recv(1000).decode().strip().lower()
-            if response == "yes":
-                message = DISCONNECT.encode()
-                connection.send(message)
-                duration = time.monotonic() - start_time
+    timeStart = time.time()
+    
+   
+    for i in range(0,total, intervall):
+        while True:
+            interval_bytes_received = 0
+            if time.time() - timeStart > intervall:
+                msg = connection.recv(1000)   #Decoding received message
+                endtime = "%.2f" % ( start_time + (time.time()- timeStart))
+                start_time = "%.2f" % start_time
+                print(f"{start_time} - {endtime}")
+                start_time= float(start_time) + (time.time()-timeStart)
+                timeStart = time.time()
+                if not msg:
+                    break
+                total_bytes_received += len(msg)
+                interval_bytes_received += len(msg)
+                print(total_bytes_received)
                 if(args.format == "B"):
-                     total_bytes = f"{total_bytes_received} B"
+                     total_bytes = f"{interval_bytes_received} B"
                 elif (args.format == "KB"):
-                     total_bytes = f"{total_bytes_received/1000} KB "
-                elif (args.format == "MB"):
-                     total_bytes = f"{total_bytes_received/1000000.0} MB"
-                transfer_rate = (total_bytes_received*8)/(duration*1000000)
-                rate = round(transfer_rate,2)
-                #Denne koden lager en string "interval" som inneholder en tidsperiode fra 0.0 til varigheten av dataoverføringen (i sekunder). "round(duration, 1)" runder av "duration" variabelen til en desimal.
-                interval = f"0.0 - {round(duration, 1)}"
-
-                #result = f"Result: ID={addr[0]}:{addr[1]} Interval={duration:.2f} Transfer={total_bytes_received/(1024*1024):.0f} Rate={transfer_rate:.2f} Mbps"
-                #result = f"Result: ID={addr[0]}:{addr[1]} Interval:{duration:.2f} recived {total_bytes} Rate {rate} "
-                output_format = "{:<10} {:<15} {:<10} {:<10}"
-                output = output_format.format("ID", "Interval", "Received", "Rate") 
-                output += "\n{:<10} {:<15} {:<10} {:<10} Mbps".format(  
-                     f"{addr[0]}:{addr[1]}",  f"{interval}", 
-                       f"{total_bytes}",  f"{rate:.2f}")
+                      total_bytes = f"{interval_bytes_received/1000} KB "
+                elif (args.format == "MB"):                        
+                      total_bytes = f"{interval_bytes_received/1000000.0} MB"
+                transfer_rate = (interval_bytes_received*8)/(intervall*1000000)
+                rate = round(transfer_rate, 2)
+                interval_str = f"{start_time} - {endtime}"
+                output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
+                output = output_format.format(
+                f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
                 connection.send(output.encode())
-                print(output)
-                break  #Exiting the loop
-            else:
-                print("Client will not disconnect.")
-                connection.send(message.encode())
- 
-    connection.close() #closing the socket
-
-
-
-def handleClient(connection, addr, interval):
-    print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
-    total_bytes_received = 0
-    start_time = time.monotonic()
-    duration = 25  # Change this to the desired test duration
-    for t in range(0, duration, interval):
-        interval_start_time = time.monotonic()
-        interval_bytes_received = 0
-        while time.monotonic() - interval_start_time < interval:
-            msg = connection.recv(1000).decode()   #Decoding received message
-            if not msg:
-                break
-            total_bytes_received += len(msg)
-            interval_bytes_received += len(msg)
-            print(total_bytes_received)
-            print ("received  message = ", msg)   #Printing the received message on the server side
-            if msg == DISCONNECT:
-                message = "Are you sure you want to disconnect? (yes/no):"
-                connection.send(message.encode())
-                response = connection.recv(1000).decode().strip().lower()
-                if response == "yes":
-                    message = DISCONNECT.encode()
-                    connection.send(message)
-                    if(args.format == "B"):
-                        total_bytes = f"{interval_bytes_received} B"
-                    elif (args.format == "KB"):
-                        total_bytes = f"{interval_bytes_received/1000} KB "
-                    elif (args.format == "MB"):
-                        total_bytes = f"{interval_bytes_received/1000000.0} MB"
-                    transfer_rate = (interval_bytes_received*8)/(interval*1000000)
-                    rate = round(transfer_rate, 2)
-                    interval_str = f"{t:.1f} - {t+interval:.1f}"
-                    output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
-                    output = output_format.format(
-                        f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
-                    connection.send(output.encode())
+    msg = connection.recv(1000).decode() 
+    if(msg == "BYE" ):
+        if(args.format == "B"):
+            total_bytes = f"{total_bytes_received} B"
+        elif (args.format == "KB"):
+            total_bytes = f"{total_bytes_received/1000} KB "
+        elif (args.format == "MB"):
+            total_bytes = f"{total_bytes_received/1000000.0} MB"
+        transfer_rate = (total_bytes_received*8)/(intervall*1000000)
+        rate = round(transfer_rate, 2)
+        start_time= 0
+        interval =f"{start_time} - {endtime}"
+        output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
+        output = output_format.format(
+        f"{addr[0]}:{addr[1]}", interval, f"{total_bytes}", f"{rate:.2f}")
+        connection.send(output.encode())
     connection.close()
+
 
 def server(host, port): #main method
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,20 +103,10 @@ def server(host, port): #main method
 	print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
 	while True: #always true, this will always loop, and wait for new cleints to connect
 		connectionSocket, addr = sock.accept() #Accepting a new connection
-		thread= threading.Thread(target=handleClient, args =(connectionSocket,addr,args.intervall))
+		thread= threading.Thread(target=handleClient, args =(connectionSocket,addr))
 		thread.start()
                 
 
-def calculate_result(format, value):
-    if format == "B":
-        result = value
-    elif format == "KB":
-        result = value / 1024
-    elif format == "MB":
-        result = value / 1024 / 1024
-    else:
-        raise ValueError(f"Invalid format specified: {format}")
-    return result
 
 
 
@@ -155,24 +116,31 @@ parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP 
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
 parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
-parser.add_argument('-i', metavar='interval', type=int,
-                        help='Interval for statistics output in seconds', default=25)
+#parser.add_argument('-i', "--interval", type=int,help='Interval for statistics output in seconds')
+#parser.add_argument("-t", "--time", type=int, help="Duration in seconds")
+
 args = parser.parse_args()
 host = args.bind
 port = args.port
 
 def send_thread():
     while True: 
-        sentence = input("Enter message (type 'bye' to disconnect): ") #asks for client input
-        sock.send(sentence.encode()) #sending the input to the server
-        if(sentence == DISCONNECT):
-             if(sentence == "yes"):
-                  break
+        data =  1000
+        random_data = bytes([random.randint(0, 255) for _ in range(data)])
+        sock.send(random_data) #sending the input to the server
+        ack = sock.recv(1000)
+        if ack.decode() != "ACK":
+             print("Error: invalid acknowledgement received from the server.")
+             sock.close()
+             exit()
+        sock.send("BYE".encode())
+        sock.close()
+       
         
         # receive and print the result message sent by the server
         
 
-    sock.close()
+
 
         
 def receive_thread(sock):
