@@ -47,8 +47,11 @@ def handleClient(connection, addr):
     intervall = 1
     total_bytes_received = 0
     timeStart = time.time()
-    
-   
+    """
+    if args.tid():
+         tid_samlet(connection,addr,total ,intervall)
+    else:
+    """
     for i in range(0,total, intervall):
         while True:
             interval_bytes_received = 0
@@ -73,28 +76,18 @@ def handleClient(connection, addr):
                 transfer_rate = (interval_bytes_received*8)/(intervall*1000000)
                 rate = round(transfer_rate, 2)
                 interval_str = f"{start_time} - {endtime}"
+                #f"{('%.2f' % start_time)} - {endtime}"
                 output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
-                output = output_format.format(
+                output = output_format.format("ID", "Interval", "Received", "Rate") 
+                output += "\n{:<10} {:<15} {:<10} {:<10}".format(
                 f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
                 connection.send(output.encode())
-    msg = connection.recv(1000).decode() 
-    if(msg == "BYE" ):
-        if(args.format == "B"):
-            total_bytes = f"{total_bytes_received} B"
-        elif (args.format == "KB"):
-            total_bytes = f"{total_bytes_received/1000} KB "
-        elif (args.format == "MB"):
-            total_bytes = f"{total_bytes_received/1000000.0} MB"
-        transfer_rate = (total_bytes_received*8)/(intervall*1000000)
-        rate = round(transfer_rate, 2)
-        start_time= 0
-        interval =f"{start_time} - {endtime}"
-        output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
-        output = output_format.format(
-        f"{addr[0]}:{addr[1]}", interval, f"{total_bytes}", f"{rate:.2f}")
-        connection.send(output.encode())
-    connection.close()
-
+                print(output)
+                break
+   
+def tid_samlet(connection,addr,total,intervall):
+     return FileNotFoundError
+     
 
 def server(host, port): #main method
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,7 +99,6 @@ def server(host, port): #main method
 		thread= threading.Thread(target=handleClient, args =(connectionSocket,addr))
 		thread.start()
                 
-
 
 
 
@@ -123,23 +115,15 @@ args = parser.parse_args()
 host = args.bind
 port = args.port
 
-def send_thread():
+def send_thread(sock):
     while True: 
-        data =  1000
+        data = 1000
         random_data = bytes([random.randint(0, 255) for _ in range(data)])
         sock.send(random_data) #sending the input to the server
-        ack = sock.recv(1000)
-        if ack.decode() != "ACK":
-             print("Error: invalid acknowledgement received from the server.")
-             sock.close()
-             exit()
-        sock.send("BYE".encode())
-        sock.close()
-       
+
         
         # receive and print the result message sent by the server
         
-
 
 
         
@@ -148,8 +132,9 @@ def receive_thread(sock):
         received_line = sock.recv(1000).decode()
         if not received_line:
             break
-        print('\nFrom Server:', received_line)
+        print(received_line)
     sock.close()
+
 
 
 if args.server:
@@ -163,10 +148,12 @@ elif args.client:
         sock.connect((args.server_ip,args.port))
 	
         print(f"A simpleperf client with IP {args.server_ip}:{args.port} is connected with {args.server}:{args.port}")
-        t1 = threading.Thread(target=send_thread, args=())
+        t1 = threading.Thread(target=send_thread, args=(sock,))
         t2 = threading.Thread(target=receive_thread, args=(sock,))
         t1.start()
         t2.start()
+        t1.join()
+        t2.join()
         
     except:
 	    print("Error: failed to connect to server")

@@ -159,7 +159,7 @@ def handleClient(connection, addr,intervall):
                 interval_str = f"{start_time} - {endtime}"
                 output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
                 output = output_format.format(
-                f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
+                f"{addr[0]}:{addr[1]}", f"{interval_str:.2f}", f"{total_bytes}", f"{rate:.2f}")
                 connection.send(output.encode())
                 
               
