@@ -12,6 +12,7 @@ import sys
 import threading #importing needed packets
 import argparse
 import re
+import time
 
 DISCONNECT = "bye"
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
@@ -39,19 +40,49 @@ def check_ip(val):
 
 
 def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
-	print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
-	totea_bytes = 0
-	while True:
-		msg = connection.recv(1000).decode()   #Decoding recieved message
-		print ("received  message = ", msg)   #Printing the recieved message on the server side
-		if (msg== DISCONNECT):  
-			melding_send = DISCONNECT.encode()
-			connection.send((melding_send))
-			break  #Exiting the loop
-		else:
-			melding_send = "Do you want to quit this session?".encode()
+    print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
+    total_bytes_received = 0
+    start_time = time.monotonic()
+    while True:
+        msg = connection.recv(1000).decode()   #Decoding received message
+        if not msg:
+             break
+        
+        total_bytes_received +=len(msg)
+        print(total_bytes_received)
+        print ("received  message = ", msg)   #Printing the received message on the server side
+        if msg == DISCONNECT:  
+            message = "Are you sure you want to disconnect? (yes/no):"
+            connection.send(message.encode())
+            response = connection.recv(1000).decode().strip().lower()
+            if response == "yes":
+                message = DISCONNECT.encode()
+                connection.send(message)
+                duration = time.monotonic() - start_time
+                transfer_rate = total_bytes_received/duration/(1000* 1000)
+                rate = round(transfer_rate,2)
+                if(args.format == "B"):
+                     total_bytes = f"{total_bytes_received} B"
+                elif (args.format == "KB"):
+                     total_bytes = f"{total_bytes_received/1000} KB "
+                elif (args.format == "MB"):
+                     total_bytes = f"{total_bytes_received/1000000.0} MB"
 
-	connection.close() #closing the socket
+                #result = f"Result: ID={addr[0]}:{addr[1]} Interval={duration:.2f} Transfer={total_bytes_received/(1024*1024):.0f} Rate={transfer_rate:.2f} Mbps"
+                #result = f"Result: ID={addr[0]}:{addr[1]} Interval:{duration:.2f} recived {total_bytes} Rate {rate} "
+                output_format = "{:<10} {:<15} {:<10} {:<10}"
+                output = output_format.format("ID", "Interval", "Received", "Rate") 
+                output += "\n{:<10} {:<15} {:<10} {:<10} Mbps".format(  
+                     f"{addr[0]}:{addr[1]}",  "0.0 - 25.0", 
+                       f"{total_bytes}",  f"{rate:.2f}")
+                connection.send(output.encode())
+                print(output)
+                break  #Exiting the loop
+            else:
+                print("Client will not disconnect.")
+                connection.send(message.encode())
+ 
+    connection.close() #closing the socket
 
 def server(host, port): #main method
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -75,46 +106,39 @@ def calculate_result(format, value):
     return result
 
 
-def main():
-    parser.add_argument('-s','--server', action='store_true')
-    parser.add_argument('-p','--port', type=check_port)
-    parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
-    parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
-    parser.add_argument('-c','--client', action='store_true')
-    parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
-    parser.add_argument('-P', '--server_port', type=int, help='The IP address to bind to (default: localhost)')
-    args = parser.parse_args()
-    print(args)
+
+parser.add_argument('-s','--server', action='store_true')
+parser.add_argument('-p','--port', type=check_port)
+parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
+parser.add_argument('-c','--client', action='store_true')
+parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
+parser.add_argument('-P', '--server_port', type=int, help='The IP address to bind to (default: localhost)')
+args = parser.parse_args()
 host = args.bind
 port = args.port
 
-
 def send_thread():
-	while True: 
-		sentence = input("Enter message (type 'bye' to disconnect): ") #asks for client input
-		sock.send(sentence.encode()) #sending the input to the server
-		if (sentence == DISCONNECT): #if the inpout is exit, the client stops
-			message = "Vil du avslutte?(ja/nei):"
-			sock.send(message.encode())
-			response = sock.recv(100).decode().strip().lower()
-			if response == "ja":
-				print("serveren avsluttes")
-				sock.close
-			else:
-				print("Klienten ønsker ikke å avslutte.")
+    while True: 
+        sentence = input("Enter message (type 'bye' to disconnect): ") #asks for client input
+        sock.send(sentence.encode()) #sending the input to the server
+        if(sentence == DISCONNECT):
+             if(sentence == "yes"):
+                  break
+        
+        # receive and print the result message sent by the server
+        
 
+    sock.close()
 
-def receive_thread(sock): #another function/thread to listen for messages
-	msg =""
-	while True: 
-		received_line = sock.recv(1000).decode() #When a message is recieved from the client, it is decoded. The message has 1024 bytes.
-		print ('\nFrom Server:', received_line) #prints the menssage recieved from the server
-		if (received_line == DISCONNECT): #if the message is "bye", the thread stops. This is done to prevent infinate looping
-			break
-		else:
-			print(msg)
-			pass
-	sock.close()
+        
+def receive_thread(sock):
+    while True:
+        received_line = sock.recv(1000).decode()
+        if not received_line:
+            break
+        print('\nFrom Server:', received_line)
+    sock.close()
 
 
 if args.server:
