@@ -17,47 +17,63 @@ for i in range(0, total,intervall):
 start_time = 0
 print (f"{start_time} - {endtime}")
 
+import argparse
+import socket
+import time
+import threading
 
-def handleClient(connection, addr):
-    print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
-    intervall =1
-    total_bytes_received = 0
-    timeStart = time.time()
-    duration= 4  # Change this to the desired test duration
-    for t in range(0, duration, intervall):
-        while True:
-            interval_bytes_received = 0
-            if time.time() - timeStart > intervall:
-                msg = connection.recv(1000).decode()   #Decoding received message
-                endtime = "%.2f" % ( start_time + (time.time()- timeStart))
-                start_time = "%.2f" % start_time
-                print(f"{start_time} - {endtime}")
-                start_time= float(start_time) + (time.time()-timeStart)
-                timeStart = time.time()
-                if not msg:
-                    break
-                total_bytes_received += len(msg)
-                interval_bytes_received += len(msg)
-                print(total_bytes_received)
-                print ("received  message = ", msg)   #Printing the received message on the server side
-                if msg == DISCONNECT:
-                    message = "Are you sure you want to disconnect? (yes/no):"
-                    connection.send(message.encode())
-                    response = connection.recv(1000).decode().strip().lower()
-                    if response == "yes":
-                        message = DISCONNECT.encode()
-                        connection.send(message)
-                        if(args.format == "B"):
-                            total_bytes = f"{interval_bytes_received} B"
-                        elif (args.format == "KB"):
-                            total_bytes = f"{interval_bytes_received/1000} KB "
-                        elif (args.format == "MB"):
-                            total_bytes = f"{interval_bytes_received/1000000.0} MB"
-                        transfer_rate = (interval_bytes_received*8)/(intervall*1000000)
-                        rate = round(transfer_rate, 2)
-                        interval_str = f"{t:.1f} - {t+intervall:.1f}"
-                        output_format = "{:<10} {:<15} {:<10} {:<10} Mbps"
-                        output = output_format.format(
-                            f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
-                        connection.send(output.encode())
-    connection.close()
+def transfer_data(host, port, num_bytes):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((host, port))
+        for i in range(num_bytes // 1000):
+            sock.send(b'0' * 1000)
+        remaining_bytes = num_bytes % 1000
+        if remaining_bytes:
+            sock.send(b'0' * remaining_bytes)
+
+def run_client(args):
+    host = args.host
+    port = args.port
+    total_bytes = args.num_bytes
+    num_parallel = args.parallel
+    duration = args.duration
+
+    start_time = time.monotonic()
+
+    threads = []
+    for i in range(num_parallel):
+        t = threading.Thread(target=transfer_data, args=(host, port, total_bytes//num_parallel))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    elapsed_time = time.monotonic() - start_time
+
+    total_bytes_str = f"{total_bytes/(1024*1024):.3f} MB"
+    bandwidth = (total_bytes/elapsed_time)/1000000
+    bandwidth_str = f"{bandwidth:.3f} Mbps"
+
+    print("ID Interval Transfer Bandwidth")
+    for i in range(num_parallel):
+        output_format = "{:<10} {:<15} {:<10} Mbps"
+        output = output_format.format(
+            f"{host}:{port}",
+            f"{duration:.1f} seconds",
+            f"{total_bytes_str}/{num_parallel}",
+            f"{bandwidth_str}"
+        )
+        print(output)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-H', '--host', default='localhost', type=str, help='The IP address of the server to connect to (default: localhost)')
+    parser.add_argument('-p', '--port', default=8080, type=int, help='The port number of the server to connect to (default: 8080)')
+    parser.add_argument('-n', '--num-bytes', type=int, help='The number of bytes to transfer to the server')
+    parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
+    parser.add_argument('-t', '--duration', default=25.0, type=float, help='The duration of the transfer in seconds (default: 25.0)')
+
+    args = parser.parse_args()
+
+    run_client(args)

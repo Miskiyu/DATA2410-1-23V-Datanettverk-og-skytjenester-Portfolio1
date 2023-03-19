@@ -30,6 +30,9 @@ def run_server(host,port):
                     data = conn.recv(1024)
                     if not data:
                         break
+                    if data == b"BYE":
+                        conn.sendall(b'ACK:BYE')
+                        break
                     bytes_received += len(data)
                 duration = time.monotonic() - start_time
                 if(args.format == "B"):
@@ -40,16 +43,7 @@ def run_server(host,port):
                     total_bytes = f"{bytes_received/1000000.0} MB"
                 elapsed_time = duration- start_time
                 print(f"Received {bytes_received} bytes in {elapsed_time:.2f} seconds  KB/s)")
-            #  if data!= 0:
-             #        transfer_rate = (bytes_received*8)/(duration*1000000)
-              #  else:
-               #      transfer_rate = 0.0  
-                #rate = round(transfer_rate,2)
-                #Denne koden lager en string "interval" som inneholder en tidsperiode fra 0.0 til varigheten av dataoverføringen (i sekunder). "round(duration, 1)" runder av "duration" variabelen til en desimal.
                 interval = f"0.0 - {round(duration, 1)}"
-
-                #result = f"Result: ID={addr[0]}:{addr[1]} Interval={duration:.2f} Transfer={total_bytes_received/(1024*1024):.0f} Rate={transfer_rate:.2f} Mbps"
-                #result = f"Result: ID={addr[0]}:{addr[1]} Interval:{duration:.2f} recived {total_bytes} Rate {rate} "
                 output_format = "{:<10} {:<15} {:<10} "
                 output = output_format.format("ID", "Interval", "Received") 
                 output += "\n{:<10} {:<15} {:<10}  Mbps".format(  
@@ -59,44 +53,74 @@ def run_server(host,port):
                 break
 
                 
-def run_client(host, port, duration,interval):
+def run_client(host, port):
     print(f"A simpleperf client with {host}:{port} is connected with ")
     start_time = time.monotonic()
     bytes_sent = 0
     timeStart = time.time()
-    
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
              s.connect((host, port))
-
-             for i in range(0, duration,interval): 
-                interval_bytes_received = 0
-                while time.monotonic() - timeStart < interval:
-                    data = b"x" * 1000
-                    s.sendall(data)
-                    endtime = "%.2f" % ( start_time + (time.time()- timeStart))
-                    start_time = "%.2f" % start_time
-                    start_time= float(start_time) + (time.time()-timeStart)
-                    timeStart = time.time()
-                    if not data:
-                        break
-                    bytes_sent += len(data)
-                    interval_bytes_received +=len(data)
-                    if(args.format == "B"):
-                         total_bytes = f"{interval_bytes_received} B"
-                    elif (args.format == "KB"):
-                      total_bytes = f"{interval_bytes_received/1000} KB "
-                    elif (args.format == "MB"):                        
-                       total_bytes = f"{interval_bytes_received/1000000.0} MB"
+             if args.time and args.interval:
+                interval = args.interval
+                duration = args.time
+                for i in range(0, duration,interval): 
+                    interval_bytes_received = 0
+                    while time.monotonic() - timeStart < interval:
+                        data = b"x" * 1000
+                        s.sendall(data)
+                        endtime = "%.2f" % ( start_time + (time.time()- timeStart))
+                        start_time = "%.2f" % start_time
+                        start_time= float(start_time) + (time.time()-timeStart)
+                        timeStart = time.time()
+                        if not data:
+                            break
+                        bytes_sent += len(data)
+                        interval_bytes_received +=len(data)
+                        if(args.format == "B"):
+                            total_bytes = f"{interval_bytes_received} B"
+                        elif (args.format == "KB"):
+                            total_bytes = f"{interval_bytes_received/1000} KB "
+                        elif (args.format == "MB"):                        
+                            total_bytes = f"{interval_bytes_received/1000000.0} MB"
                 
-                    interval_str = f"{i:.1f} - {i+interval:.1f}"
+                        interval_str = f"{i:.1f} - {i+interval:.1f}"
                 #f"{('%.2f' % start_time)} - {endtime}"
-                    output_format = "{:<10} {:<15} {:<10} Mbps"
-                    output = output_format.format("ID", "Interval", "Received") 
-                    output += "\n{:<10} {:<15} {:<10}".format(
-                    f"{host}:{port}", interval_str, f"{total_bytes}")
+                        output_format = "{:<10} {:<15} {:<10} Mbps"
+                        output = output_format.format("ID", "Interval", "Received") 
+                        output += "\n{:<10} {:<15} {:<10}".format(
+                        f"{host}:{port}", interval_str, f"{total_bytes}")
+                        print(output)
+                        break
+                if not args.time and not args.interval:
+                    while True:
+                        data = b"x" * 1000
+                        s.sendall(data)
+                        if not data:
+                            break
+                        bytes_sent += len(data)
+                        print(bytes_sent)
+                        if bytes_sent >= 1000:
+                            s.sendall(b"BYE")
+                            break
+                        response = s.recv(1000).decode()
+                        if response == "BYE":
+                             s.sendall(b"ACK:BYE")
+                             break
+                    end_time = time.monotonic()
+                    elapsed_time = end_time - start_time
+                    if(args.format == "B"): 
+                       total_bytes = f"{bytes_sent} B"
+                    elif (args.format == "KB"):
+                        total_bytes = f"{bytes_sent/1000} KB "
+                    elif (args.format == "MB"):
+                        total_bytes = f"{bytes_sent/1000000.0} MB"
+                    output_format = "{:<10} {:<15} {:<10} {:<10} {:<10}"
+                    output = output_format.format("ID", "Interval", "Transferred", "Bitrate", "Elapsed time") 
+                    output += "\n{:<10} {:<15} {:<10} {:<10.2f} {:<10.2f}".format(
+                    f"{host}:{port}", "N/A", f"{total_bytes}", bytes_sent*8/elapsed_time/1000000, elapsed_time)
                     print(output)
-                    break
+           
              if(args.format == "B"): 
                  total_bytes = f"{bytes_sent} B"
              elif (args.format == "KB"):
@@ -106,7 +130,7 @@ def run_client(host, port, duration,interval):
              end_time = time.monotonic()
              elapsed_time = end_time - start_time
                 #Denne koden lager en string "interval" som inneholder en tidsperiode fra 0.0 til varigheten av dataoverføringen (i sekunder). "round(duration, 1)" runder av "duration" variabelen til en desimal.
-             interval = f"0.0 - {duration}"
+             interval = f"0.0 - {args.time}"
 
              #result = f"Result: ID={addr[0]}:{addr[1]} Interval={duration:.2f} Transfer={total_bytes_received/(1024*1024):.0f} Rate={transfer_rate:.2f} Mbps"
              #result = f"Result: ID={addr[0]}:{addr[1]} Interval:{duration:.2f} recived {total_bytes} Rate {rate} "
@@ -138,9 +162,11 @@ def main():
     if args.server:
         run_server(args.bind,args.port)
     elif args.client:
-        run_client(args.server_ip, args.port, args.time,args.interval)
+        run_client(args.server_ip, args.port)
     else:
 	    print("Error: you must run either in server or client mode")
 
 if __name__ == "__main__":
     main()
+
+
