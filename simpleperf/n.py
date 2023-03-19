@@ -75,3 +75,65 @@ if __name__ == '__main__':
         run_server()
     else:
         run_client()
+
+import argparse
+import socket
+import time
+
+def run_server(port):
+    print(f"Starting server on port {port}")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", port))
+        s.listen(1)
+        while True:
+            conn, addr = s.accept()
+            with conn:
+                print(f"Connection from {addr[0]}:{addr[1]}")
+                start_time = time.monotonic()
+                bytes_received = 0
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    bytes_received += len(data)
+                end_time = time.monotonic()
+                elapsed_time = end_time - start_time
+                speed = bytes_received / elapsed_time
+                print(f"Received {bytes_received} bytes in {elapsed_time:.2f} seconds ({speed/1000:.2f} KB/s)")
+                
+def run_client(host, port, duration):
+    print(f"Connecting to {host}:{port}")
+    start_time = time.monotonic()
+    bytes_sent = 0
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, port))
+        while time.monotonic() - start_time < duration:
+            data = b"x" * 1024
+            s.sendall(data)
+            bytes_sent += len(data)
+    end_time = time.monotonic()
+    elapsed_time = end_time - start_time
+    speed = bytes_sent / elapsed_time
+    print(f"Sent {bytes_sent} bytes in {elapsed_time:.2f} seconds ({speed/1000:.2f} KB/s)")
+    
+def main():
+    parser = argparse.ArgumentParser(description="A simple implementation of iperf")
+    subparsers = parser.add_subparsers(dest="mode", required=True, help="Mode of operation")
+
+    server_parser = subparsers.add_parser("server", help="Run as server")
+    server_parser.add_argument("port", type=int, help="Port number to listen on")
+
+    client_parser = subparsers.add_parser("client", help="Run as client")
+    client_parser.add_argument("host", type=str, help="Host name to connect to")
+    client_parser.add_argument("port", type=int, help="Port number to connect to")
+    client_parser.add_argument("duration", type=int, help="Duration of test in seconds")
+    
+    args = parser.parse_args()
+
+    if args.mode == "server":
+        run_server(args.port)
+    elif args.mode == "client":
+        run_client(args.host, args.port, args.duration)
+
+if __name__ == "__main__":
+    main()

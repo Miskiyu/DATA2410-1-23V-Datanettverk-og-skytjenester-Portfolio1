@@ -38,7 +38,7 @@ def check_ip(val):
         print("this is not valid ip-adress")
         sys.exit()  
 
-"""
+
 def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
     total_bytes_received = 0
@@ -86,7 +86,7 @@ def handleClient(connection, addr ): #A client handler function, this function g
     connection.close() #closing the socket
 
 
-"""
+
 """
 def handleClient(connection, addr, interval):
     print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
@@ -125,7 +125,7 @@ def handleClient(connection, addr, interval):
                         f"{addr[0]}:{addr[1]}", interval_str, f"{total_bytes}", f"{rate:.2f}")
                     connection.send(output.encode())
     connection.close()
-
+"""
 """
 def handleClient(connection, addr,intervall):
     print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
@@ -179,8 +179,8 @@ def handleClient(connection, addr,intervall):
     connection.send(output.encode())
     connection.close()
 
-
-def server(host, port, interval): #main method
+"""
+def server(host, port): #main method
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sock.bind((host,port))	
 	sock.listen()
@@ -241,7 +241,7 @@ def receive_thread(sock):
 
 
 if args.server:
-    server(host,port,args.interval)
+    server(host,port)
 
 elif args.client:        
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

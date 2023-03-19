@@ -14,6 +14,7 @@ import argparse
 import re
 import time
 import random
+import os
 DISCONNECT = "bye"
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
 message_length = '0'*1000  
@@ -38,7 +39,7 @@ def check_ip(val):
         print("this is not valid ip-adress")
         sys.exit()  
 
-
+"""
 def handleClient(connection, addr):
     print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
     start_time = 0
@@ -47,16 +48,16 @@ def handleClient(connection, addr):
     intervall = 1
     total_bytes_received = 0
     timeStart = time.time()
-    """
+
     if args.tid():
          tid_samlet(connection,addr,total ,intervall)
     else:
-    """
+
     for i in range(0,total, intervall):
         while True:
             interval_bytes_received = 0
             if time.time() - timeStart > intervall:
-                msg = connection.recv(1000)   #Decoding received message
+                msg = connection.recv(1000)  #Decoding received message
                 endtime = "%.2f" % ( start_time + (time.time()- timeStart))
                 start_time = "%.2f" % start_time
                 print(f"{start_time} - {endtime}")
@@ -84,7 +85,50 @@ def handleClient(connection, addr):
                 connection.send(output.encode())
                 print(output)
                 break
+"""
    
+def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
+    print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
+    total_bytes_received = 0
+    start_time = time.monotonic()
+    while True:
+        msg = connection.recv(1000)   #Decoding received message
+        if not msg:
+             break
+        total_bytes_received +=len(msg)
+        print(total_bytes_received)
+        print ("received  message = ", msg)   #Printing the received message on the server side
+        if msg == "BYE":  
+            connection.send("ACK:Bye".encode())
+        
+            duration = time.monotonic() - start_time
+            if(args.format == "B"):
+                 total_bytes = f"{total_bytes_received} B"
+            elif (args.format == "KB"):
+                 total_bytes = f"{total_bytes_received/1000} KB "
+            elif (args.format == "MB"):
+                 total_bytes = f"{total_bytes_received/1000000.0} MB"
+            transfer_rate = (total_bytes_received*8)/(duration*1000000)
+            rate = round(transfer_rate,2)
+                #Denne koden lager en string "interval" som inneholder en tidsperiode fra 0.0 til varigheten av dataoverføringen (i sekunder). "round(duration, 1)" runder av "duration" variabelen til en desimal.
+            interval = f"0.0 - {round(duration, 1)}"
+
+                #result = f"Result: ID={addr[0]}:{addr[1]} Interval={duration:.2f} Transfer={total_bytes_received/(1024*1024):.0f} Rate={transfer_rate:.2f} Mbps"
+                #result = f"Result: ID={addr[0]}:{addr[1]} Interval:{duration:.2f} recived {total_bytes} Rate {rate} "
+            output_format = "{:<10} {:<15} {:<10} {:<10}"
+            output = output_format.format("ID", "Interval", "Received", "Rate") 
+            output += "\n{:<10} {:<15} {:<10} {:<10} Mbps".format(  
+                  f"{addr[0]}:{addr[1]}",  f"{interval}", 
+                  f"{total_bytes}",  f"{rate:.2f}")
+            connection.send(output.encode())
+            print(output)
+            break  #Exiting the loop
+            
+    connection.close() #closing the socket
+
+
+
+
 def tid_samlet(connection,addr,total,intervall):
      return FileNotFoundError
      
@@ -115,15 +159,28 @@ args = parser.parse_args()
 host = args.bind
 port = args.port
 
-def send_thread(sock):
-    while True: 
-        data = 1000
-        random_data = bytes([random.randint(0, 255) for _ in range(data)])
-        sock.send(random_data) #sending the input to the server
+data_size = 1000 # 10 MB in bytes
+data_rate = 1000
 
+import time
+import os
+
+def send_thread():
+    total_sent = 0
+    start_time = time.time()
+    while total_sent < data_size:
+        data = os.urandom(1000)
+        sent = sock.send(data)
+        total_sent += sent
+        elapsed_time = time.time() - start_time
+        time_to_sleep = max(0, (total_sent / data_rate) - elapsed_time)
+        time.sleep(time_to_sleep)
+        if total_sent >= 10*100*100:
+             sock.sendall(b'BYE')
+             break
         
-        # receive and print the result message sent by the server
-        
+    print(f"Sent {total_sent} bytes to server")
+    sock.close()
 
 
         
@@ -148,7 +205,7 @@ elif args.client:
         sock.connect((args.server_ip,args.port))
 	
         print(f"A simpleperf client with IP {args.server_ip}:{args.port} is connected with {args.server}:{args.port}")
-        t1 = threading.Thread(target=send_thread, args=(sock,))
+        t1 = threading.Thread(target=send_thread, args=())
         t2 = threading.Thread(target=receive_thread, args=(sock,))
         t1.start()
         t2.start()
