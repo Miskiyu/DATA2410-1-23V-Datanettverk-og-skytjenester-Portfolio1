@@ -80,17 +80,21 @@ def run_server(host, port):
                 print(output)
                 print(f"Total: {bytes_received/1000000:.2f} MB, {1000000:.2f} Mbps")
 
+
 def handleparallel(host, port, duration, interval,parallel,num):
-    for i in range()
-
-
-                
-def run_client(host, port, duration, interval,parallel,num):
-    print(f"A simpleperf client with {host}:{port} is connected with ")
+    for i in range(0,parallel):
+        break
     client = []
-    if parallel > 1:
-        handleparallel(host, port, duration, interval,parallel,num)
-        stop
+
+     
+                
+def run_client(host, port, parallel,num ,duration=None, interval=None,):
+    print(f"A simpleperf client with {host}:{port} is connected with ")
+    
+    while True:
+        if parallel > 1:
+            handleparallel(host, port, duration, interval, parallel,num)
+            break
     start_time = time.monotonic()
     bytes_sent = 0
     if duration is None and interval is None:
