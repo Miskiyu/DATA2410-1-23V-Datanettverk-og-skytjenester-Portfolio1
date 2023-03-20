@@ -1,26 +1,9 @@
-"""
-When you run in server mode, simpleperf will receive TCP packets and track
-how much data was received during from the connected clients; it will calculate
-and display the bandwidth based on how much data was received and how much
-time elapsed during the connection. A server should read data in chunks of 1000
-bytes. For the sake of simplcity, assume 1 KB = 1000 Bytes, and 1 MB = 1000
-KB.
-"""
-
-import sys
 import argparse
 import socket
 import time
-import re
-DISCONNECT = "bye"
-message_length = '0'*1000  #hvordan man lager 1000 bytes
-
-
-"""SEERVER MODE"""
-
-
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+import sys
+import ipaddress
+import threading
 
 
 """Her lager jeg en funksjon som sjekker om porten er valid"""
@@ -34,104 +17,162 @@ def check_port(val):
     except ValueError:
         raise argparse.ArgumentTypeError("Expected an integer but you entred a string")
     
-def check_ip(val):
-    ip = re.match("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}",val)
-    if(ip):
-        return True
-    else:
-        print("this is not valid ip-adress")
-        sys.exit()    
+def check_ip(address):
+    try:
+        val = ipaddress.ip_address(address)
+        print(f'The IP adress {val} is valid.')
+    except ValueError:
+        print("The IP address is not valid ")
+        sys.exit()
 
-def server(host,port):
-    #lager en TCP/IP socket og velger type adresse og strem 
-    sock.bind((host,port))
-    sock.listen()
-    print(f"Hører på on {host}:{port}")
-    bytes_recived = b""
-
-    while True:
-        connection, addr =sock.accept()
-        print(f"Hører på on {addr}")
+def run_server(host, port):
+    print('A SIMPLEPERF SERVER IS LISTENING ON PORT',port)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((host, port))
+        s.listen(1)
         while True:
-            data = connection.recv(1000)
-            if not data:
-                break
-            bytes_recived+=data
-        response = "Thanks for the data!"
-        connection.sendall(response)
-        connection.close()
+            conn, addr = s.accept()
+           # thread = threading.Thread(target=run_client, args=(conn,addr))
+            #thread.start()  
+            with conn:
+                print(f"Connection from {addr[0]}:{addr[1]}")
+                start_time = time.monotonic()
+                bytes_received = 0
+                total_bytes = 0
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    bytes_received += len(data)
+             
+                    if data == b"BYE":
+                        conn.sendall(b"ACK: BYE")
+                        end_time = time.monotonic()
+                        duration = end_time-start_time
+                        if(args.format == "B"): 
+                           total_bytes = f"{bytes_received} B"
+                        elif (args.format == "KB"):
+                            total_bytes = f"{bytes_received/1000} KB "
+                        elif (args.format == "MB"):
+                            total_bytes = f"{bytes_received/1000000.0} MB"
+                        interval = f"0.0 - {round(duration, 1)}"
+                        output_format = "{:<10} {:<15} {:<10} "
+                        output = output_format.format("ID", "Interval", "Received") 
+                        output += "\n{:<10} {:<15} {:<10}  Mbps".format(  
+                                 f"{addr[0]}:{addr[1]}",  f"{interval}", 
+                         f"{total_bytes}")
+                        print(output)
+                        conn.close()
+                        break
+                end_time = time.monotonic()
+                elapsed_time = end_time - start_time
+                if(args.format == "B"):
+                    total_bytes = f"{bytes_received}"
+                elif (args.format == "KB"):
+                    total_bytes = f"{bytes_received/1000} "
+                elif (args.format == "MB"):
+                    total_bytes = f"{bytes_received/1000000.0}"   
+                output_format = "{:<10} {:<15} {:<10} "
+                output = output_format.format("ID", "Interval", "Received") 
+                output += "\n{:<10} {:<15} {:<10}  Mbps".format(  
+                             f"{addr[0]}:{addr[1]}",  f"{elapsed_time}", 
+                         f"{total_bytes}")
+                print(output)
+                print(f"Total: {bytes_received/1000000:.2f} MB, {1000000:.2f} Mbps")
 
-parser = argparse.ArgumentParser(description="positional arguments", epilog="End of help")
+def handleparallel(host, port, duration, interval,parallel,num):
+    for i in range()
 
 
-#lager server 
+                
+def run_client(host, port, duration, interval,parallel,num):
+    print(f"A simpleperf client with {host}:{port} is connected with ")
+    client = []
+    if parallel > 1:
+        handleparallel(host, port, duration, interval,parallel,num)
+        stop
+    start_time = time.monotonic()
+    bytes_sent = 0
+    if duration is None and interval is None:
+        # Run a simple data transfer without intervals
+        bytes_sent = 0
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((host, port))
+            while True:
+                data = b"0" * 1000
+                s.sendall(data)
+                bytes_sent += len(data)
+                if bytes_sent  > 100000:
+                    break
+            s.sendall(b"BYE")
+            response = s.recv(1000)
+            print(response)
+            if response != b"ACK: BYE":
+                  print("Error: Did not receive acknowledgement from server")
+            else:
+              end_time = time.monotonic()
+              elapsed_time = end_time - start_time
+            print(f"Sent {bytes_sent} bytes")
+    else:
+        for i in range(int(duration/interval)):
+            interval_start_time = time.monotonic()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((host, port))
+                while time.monotonic() - interval_start_time < interval:
+                    data = b"0" * 1000
+                    s.sendall(data)
+                    bytes_sent += len(data)
+                interval_end_time = time.monotonic()
+                elapsed_time = interval_end_time - interval_start_time
+                if(args.format == "B"):
+                     total_bytes = f"{bytes_sent}"
+                elif (args.format == "KB"):
+                     total_bytes = f"{bytes_sent/1000} "
+                elif (args.format == "MB"):                        
+                    total_bytes = f"{bytes_sent/1000000}"
+            total_bytes = float(total_bytes)
+            bandwith = (total_bytes/elapsed_time)/1000000
+            output_format = "{:<10}       {:<15}      {:<10}    {:<10}"
+            output = output_format.format("ID", "Interval", "Transfer ","Bandwith") 
+            output += "\n{:<15}        {:<15}      {:<10}     {:<10}".format(
+            f"{host}:{port}", f"{interval*i:.1f} - {interval*(i+1):.1f}", f"{total_bytes}", f"{bandwith}")
+            print(output)  
+            end_time = time.monotonic()
+            elapsed_time = end_time - start_time
+        speed = (bytes_sent / elapsed_time)
+        output_format = "{:<10}      {:<15}   {:<10}  {:<10}"
+        output = output_format.format("ID", "Interval", "Transfer ","Bandwith") 
+        output += "\n{:<15}          {:<15}  {:<10}   {:<10}".format(
+        f"{host}:{port}", f"0 - {interval*(i+1):.1f}", f"{total_bytes}", f"{speed/1000000:.2f}")
+        print("------------------------------------------------------------")
+
+        print(output)  
+        print(f"Total: {bytes_sent/1000000:.2f} MB, {speed/1000000:.2f} Mbps")
+
+
+
+parser = argparse.ArgumentParser(description="A simple implementation of iperf")
 parser.add_argument('-s','--server', action='store_true')
-parser.add_argument('-p','--port', type=check_port)
-parser.add_argument('-b','--bind', type=check_ip)
+parser.add_argument('-p','--port', type=check_port , default=8088)
+parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
+parser.add_argument("-I", "--server_ip", default='localhost', type=str, help="server IP address for client mode")
+parser.add_argument("-t", "--time", type=int, help="Duration in seconds")
+parser.add_argument('-i', "--interval", type=int,help='Interval for statistics output in seconds')
+parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
+
+parser.add_argument('-n', '--num', type=str, default=1000 )
 args = parser.parse_args()
+def main():
 
-
-def handle_client(host, port):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((host,port))
-    message = input("Enter a message to send to the server: ")
-
-# Send the message to the server in chunks of 1000 bytes
-    message_bytes = message.encode('utf-8')
-    for i in range(0, len(message_bytes), 1000):
-        chunk = message_bytes[i:i+1000]
-        client_socket.sendall(chunk)
-
-    print("Message sent to server.")
-
-# Receive a response from the server
-    response = client_socket.recv(1024).decode('utf-8')
-    print(f"Received response: {response}")
-
-# Close the connection with the server
-    client_socket.close()
-
-
-
-
-if __name__ =="__main__":
+  
     if args.server:
-        print("A simpleperf server is listening on port",args.port)
-        host = args.bind
-        port = args.port
-        server(host,port)
-    elif(args.client):
-        host = args.bind
-        port = args.port
-        handle_client(host, port)
+        run_server(args.bind, args.port)
+    elif args.client:
+        run_client(args.server_ip, args.port, args.time, args.interval, args.parallel, args.num)
+    else:
+        print("Error: you must run either in server or client mode")
 
-
-"client"
-"""
-def thread1(sock):  ##hører på 
-    while True:
-        message = sock.recv(1024).decode 
-        print('\nFrom sever:',message)
-        if (message == "bye"):
-            break
-
-def threda2():
-    while True:
-        melding = input("input")
-        if melding == DISCONNECT:
-            melding_ut= melding.encode()
-            sock.send(melding_ut)
-            break
-        else:
-            melding_ut = melding.encode()
-            sock.send(melding_ut)
-
-x = '0'*1000  #hvordan man lager 1000 bytes
-print(x)
-"""
-
-
-
-
-
+if __name__ == "__main__":
+    main()
