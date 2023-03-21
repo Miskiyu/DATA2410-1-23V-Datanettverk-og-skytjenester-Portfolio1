@@ -48,8 +48,9 @@ def handleClient(connection, addr ): #A client handler function, this function g
         if not data:
              break
         total_bytes_received +=len(data)
+        if data == "BYE":
+             connection.send(b'ACK:BYE')
     print(total_bytes_received)
-    connection.sendall(b'ACK:BYE')
     connection.close()
        
 
@@ -62,8 +63,8 @@ def server(host, port): #main method
 	sock.listen()
 	print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
 	while True: #always true, this will always loop, and wait for new cleints to connect
-		connectionSocket, addr = sock.accept() #Accepting a new connection
-		thread= threading.Thread(target=handleClient, args =(connectionSocket,addr))
+		connection, addr = sock.accept() #Accepting a new connection
+		thread= threading.Thread(target=handleClient, args =(connection,addr))
 		thread.start()
                 
 
@@ -82,21 +83,32 @@ port = args.port
 def send_thread():
     while True: 
         data =  b"0" * 1000
-        duration =10
-        start_time = time.time()
+        duration =1
+        start_time = 10
         while time.time()- start_time <duration:
-             sock.send(data)
-        sock.sendall(b'BYE')    
+             msg = data.encode()
+             sock.send(msg)
+        melding ='BYE'.encode()
+        sock.send(melding)       
+        
+
+
+
         # receive and print the result message sent by the server
         
        
 def receive_thread(client_sock):
+    msg =""
     while True:
         data = client_sock.recv(1000).decode()
         if not data:
             break
-        if data == b'ACK:BYE':
+        if data =='ACK:BYE':
              print(data)
+             break
+        else:
+             msg = data
+             print(msg)
     sock.close()
 
 
