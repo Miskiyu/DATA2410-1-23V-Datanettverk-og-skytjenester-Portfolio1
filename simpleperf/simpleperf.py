@@ -51,17 +51,16 @@ def mota_melding(sock): #another function/thread to listen for messages
     print(data_length)
 
 
-def send(sock):
+def send(sock,tid):
     while True: 
         data =  b"0" * args.num
-        duration =5
         start_time = time.time()
-        while time.time()- start_time <args.time:
+        while time.time()- start_time <tid:
              sock.send(data)
         break
     sock.send('BYE'.encode())    
 
-def handle_client(connection,addr,tid):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
+def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     timeStart=time.time()
     data_lengt=0
     start_time = time.time() # Start time for data transfer
@@ -73,18 +72,17 @@ def handle_client(connection,addr,tid):#A client handler function, this function
             connection.send("ACK:BYE".encode())
             break
     transfer_rate = data_lengt / (time.time() - timeStart) / (1000 * 1000) # Update transfer_rate on each iteration of the loop
-    end_time = timeStart + tid # End time for data transfer
+    end_time = timeStart + args.time # End time for data transfer
     duration = end_time - timeStart # Calculate duration of data transfer
-    transfer_rate = (data_lengt/ duration) / (1000* 1000) # Calculate transfer rate before using it to calculate bandwidth
     bandwidth = transfer_rate / (1000*1000)
     output_format = "{:<10}       {:<15}      {:<10}    {:<15}"
     output = output_format.format("ID", "Interval", "Recived ", "Rate") 
     output += "\n{:<15}        {:<15}      {:<10}  {:<15} ".format(        
-    f"{args.bind}:{args.port}", f"0.0 - {tid}", f"{data_lengt}", f"{transfer_rate:.2f}")
+    f"{args.bind}:{args.port}", f"0.0 - {args.time}", f"{data_lengt}", f"{transfer_rate:.2f}")
     output1_format = "{:<10}       {:<15}     {:<10}    {:<15}"
     output1 = output1_format.format("ID", "Interval", "Transfer", "Bandwidth") 
     output1 += "\n{:<10} {:<15} {:<10} {:<15} ".format(
-    f"{addr[0]}:{addr[1]}", f"0.0-{tid:.1f}s",f" {data_lengt}", f"{bandwidth:.2f}")
+    f"{addr[0]}:{addr[1]}", f"0.0-{args.time}",f" {data_lengt}", f"{bandwidth}")
     print(output)  
     connection.send(output1.encode())
     connection.close()
@@ -105,7 +103,7 @@ def server(host, port): #main method
     while True: #always true, this will always loop, and wait for new cleints to connect
         connectionSocket, addr = sock.accept() #Accepting a new connection
         print(f"A simpleperf client with IP {str(args.server_ip)}:{str(args.port)} is connected with {str(args.server)}:{str(args.port)}")
-        thread= threading.Thread(target=handle_client, args =(connectionSocket,addr,args.time))
+        thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
         thread.start()
                 
 
@@ -135,7 +133,8 @@ elif args.client:
         except:
             print("Error: failed to connect to client")
         t1 = threading.Thread(target=mota_melding, args=(sock,))
-        t2 = threading.Thread(target=send, args=(sock,))
+        t2 = threading.Thread(target=send, args=(sock,args.time))
+        print(args.time)
         t1.start()
         t2.start()
 else:
