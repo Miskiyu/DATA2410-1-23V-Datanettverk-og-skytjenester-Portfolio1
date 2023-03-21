@@ -39,33 +39,34 @@ def check_ip(val):
         sys.exit()  
 
 
-def handleClient(connection, addr ): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
-    print(f"A simpleperf client with {addr[0]}:{addr[1]} is connected with ")
-    total_bytes_received = 0
-    start_time = time.monotonic()
+def mota_melding(): #A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     while True:
-        data = connection.recv(1000).decode()   #Decoding received message
-        if not data:
-             break
-        total_bytes_received +=len(data)
-        if data == "BYE":
-             connection.send(b'ACK:BYE')
-    print(total_bytes_received)
-    connection.close()
-       
+         msg = sock.recv(1000).decode()
+         if msg != "":
+              print(msg)
 
 
+def handle_client(connection,addr):
+     print(addr)
+     connection.send("HEEEEI".encode())
+     time.sleep(1)
+     connection.close()
 
 
 def server(host, port): #main method
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.bind((host,port))	
-	sock.listen()
-	print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
-	while True: #always true, this will always loop, and wait for new cleints to connect
-		connection, addr = sock.accept() #Accepting a new connection
-		thread= threading.Thread(target=handleClient, args =(connection,addr))
-		thread.start()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind((host,port))	
+    except:
+        print("Feil til å koble seg på")
+	
+    print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
+    sock.listen()
+    while True: #always true, this will always loop, and wait for new cleints to connect
+        connectionSocket, addr = sock.accept() #Accepting a new connection
+        print(f"A simpleperf client with IP {str(args.server_ip)}:{str(args.port)} is connected with {str(args.server)}:{str(args.port)}")
+        thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
+        thread.start()
                 
 
 parser.add_argument('-s','--server', action='store_true')
@@ -76,60 +77,29 @@ parser.add_argument('-c','--client', action='store_true')
 parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
 parser.add_argument('-i', "--interval", type=int,
                         help='Interval for statistics output in seconds', default=25)
-args = parser.parse_args()
-host = args.bind
-port = args.port
+parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
 
-def send_thread():
-    while True: 
-        data =  b"0" * 1000
-        duration =1
-        start_time = 10
-        while time.time()- start_time <duration:
-             msg = data.encode()
-             sock.send(msg)
-        melding ='BYE'.encode()
-        sock.send(melding)       
-        
+args = parser.parse_args()
+
 
 
 
         # receive and print the result message sent by the server
         
-       
-def receive_thread(client_sock):
-    msg =""
-    while True:
-        data = client_sock.recv(1000).decode()
-        if not data:
-            break
-        if data =='ACK:BYE':
-             print(data)
-             break
-        else:
-             msg = data
-             print(msg)
-    sock.close()
-
 
 if args.server:
-    server(host,port)
+    server(args.bind,args.port)
 
 elif args.client:        
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = args.bind
-    port = args.port
-    try:
-        sock.connect((args.server_ip,args.port))
-	
-        print(f"A simpleperf client with IP {args.server_ip}:{args.port} is connected with {args.server}:{args.port}")
-        t1 = threading.Thread(target=send_thread, args=())
-        t2 = threading.Thread(target=receive_thread, args=(sock,))
+    for i in range(0, int(args.parallel)):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+             sock.connect((args.server_ip,args.port))
+        except:
+            print("Error: failed to connect to client")
+        print("hei")
+        t1 = threading.Thread(target=mota_melding)
         t1.start()
-        t2.start()
-        
-    except:
-	    print("Error: failed to connect to server")
 else:
 	print("Error: you must run either in server or client mode")
 	    
