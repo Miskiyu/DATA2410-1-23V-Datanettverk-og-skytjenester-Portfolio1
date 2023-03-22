@@ -54,10 +54,11 @@ def mota_melding(sock): #another function/thread to listen for messages
 def send(sock):
     while True: 
         data =  b"0" * args.num
-        print(data)
+        chunk_size = 1000
         start_time = time.time()
         while time.time()- start_time <args.time:
-             sock.send(data)
+             for i in range (0, len(data), chunk_size):
+                 sock.send(data[i:i+chunk_size])
         break
     sock.send('BYE'.encode())    
 
@@ -74,8 +75,8 @@ def handle_client(connection,addr):#A client handler function, this function get
             break
     end_time = time.time()
     duration = end_time-start_time
-    transfer_rate = data_lengt / (time.time() - timeStart) / (1000 * 1000) # Update transfer_rate on each iteration of the loop
-    bandwidth = transfer_rate / (1000*1000)
+    transfer_rate =(data_lengt / duration) * 8 / 1000000# Update transfer_rate on each iteration of the loop
+    bandwidth =transfer_rate
    
     "for å skrive ut til server "
     output_format = "{:<20} {:<5}     {:<15}{:<5}"
