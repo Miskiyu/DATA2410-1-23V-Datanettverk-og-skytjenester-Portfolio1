@@ -47,15 +47,16 @@ def mota_melding(sock): #another function/thread to listen for messages
               break
          print(msg)
     data_length = sock.recv(1024).decode()
-    print("-----------------------------")
+  
     print(data_length)
 
 
-def send(sock,tid):
+def send(sock):
     while True: 
         data =  b"0" * args.num
+        print(data)
         start_time = time.time()
-        while time.time()- start_time <tid:
+        while time.time()- start_time <args.time:
              sock.send(data)
         break
     sock.send('BYE'.encode())    
@@ -71,18 +72,23 @@ def handle_client(connection,addr):#A client handler function, this function get
         if(data == "BYE"):
             connection.send("ACK:BYE".encode())
             break
+    end_time = time.time()
+    duration = end_time-start_time
     transfer_rate = data_lengt / (time.time() - timeStart) / (1000 * 1000) # Update transfer_rate on each iteration of the loop
-    end_time = timeStart + args.time # End time for data transfer
-    duration = end_time - timeStart # Calculate duration of data transfer
     bandwidth = transfer_rate / (1000*1000)
-    output_format = "{:<10}       {:<15}      {:<10}    {:<15}"
-    output = output_format.format("ID", "Interval", "Recived ", "Rate") 
-    output += "\n{:<15}        {:<15}      {:<10}  {:<15} ".format(        
-    f"{args.bind}:{args.port}", f"0.0 - {args.time}", f"{data_lengt}", f"{transfer_rate:.2f}")
-    output1_format = "{:<10}       {:<15}     {:<10}    {:<15}"
+   
+    "for å skrive ut til server "
+    output_format = "{:<20} {:<5}     {:<15}{:<5}"
+    output = output_format.format("ID", "Interval", "Transfer", "Rate") 
+    output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
+    f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{transfer_rate:.2f}")
+    
+    
+    "For å skrive ut til klienten "
+    output1_format = "{:<20} {:<5}     {:<15}{:<5}"
     output1 = output1_format.format("ID", "Interval", "Transfer", "Bandwidth") 
-    output1 += "\n{:<10} {:<15} {:<10} {:<15} ".format(
-    f"{addr[0]}:{addr[1]}", f"0.0-{args.time}",f" {data_lengt}", f"{bandwidth}")
+    output1 += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
+    f"{addr[0]}:{addr[1]}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{bandwidth:.2f}")
     print(output)  
     connection.send(output1.encode())
     connection.close()
@@ -113,10 +119,10 @@ parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP 
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
 parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
-parser.add_argument("-t", "--time", type=int, help="Duration in seconds" ,default=25)
+parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
 
 parser.add_argument('-i', "--interval", type=int,
-                        help='Interval for statistics output in seconds', default=25)
+                        help='Interval for statistics output in seconds')
 parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
 parser.add_argument('-n','--num', default=1000, type=int)
 args = parser.parse_args()
@@ -125,18 +131,20 @@ args = parser.parse_args()
 if args.server:
     server(args.bind,args.port)
 
-elif args.client:        
-    for i in range(0, int(args.parallel)):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-             sock.connect((args.server_ip,args.port))
-        except:
-            print("Error: failed to connect to client")
-        t1 = threading.Thread(target=mota_melding, args=(sock,))
-        t2 = threading.Thread(target=send, args=(sock,args.time))
-        print(args.time)
-        t1.start()
-        t2.start()
+elif args.client: 
+    if(args.parallel >0 and args.parallel <6):       
+        for i in range(0, int(args.parallel)):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                 sock.connect((args.server_ip,args.port))
+            except:
+                print("Error: failed to connect to client")
+            t1 = threading.Thread(target=mota_melding, args=(sock,))
+            t2 = threading.Thread(target=send, args=(sock,))
+            t1.start()
+            t2.start()
+    else:
+        print("-P kan ikke være større enn 5")
 else:
 	print("Error: you must run either in server or client mode")
 	    
