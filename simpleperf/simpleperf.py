@@ -77,24 +77,39 @@ def handle_client(connection,addr):#A client handler function, this function get
     duration = end_time-start_time
     transfer_rate =(data_lengt / duration) * 8 / 1000000# Update transfer_rate on each iteration of the loop
     bandwidth =transfer_rate
+    regnut(duration,data_lengt,args)
    
     "for å skrive ut til server "
+    """
     output_format = "{:<20} {:<5}     {:<15}{:<5}"
     output = output_format.format("ID", "Interval", "Transfer", "Rate") 
     output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
     f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{transfer_rate:.2f}")
-    
+    """
     
     "For å skrive ut til klienten "
     output1_format = "{:<20} {:<5}     {:<15}{:<5}"
     output1 = output1_format.format("ID", "Interval", "Transfer", "Bandwidth") 
     output1 += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
-    f"{addr[0]}:{addr[1]}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{bandwidth:.2f}")
-    print(output)  
+    f"{addr[0]}:{addr[1]}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{bandwidth:.2f}")  
     connection.send(output1.encode())
     connection.close()
 
-    
+def regnut(duration,data_length,args):
+    total_data= 0
+    if(args.format =="B"):
+        total_data = data_length
+    elif (args.format == "KB"):
+        total_data = f"{data_length/1000:.0f}"
+    elif (args.format == "MB"):
+        total_data = f"{data_length/1000000.0:.0f}"
+    transfer_rate =((float(total_data))/ duration) * 8 / 1000000
+    output_format = "{:<20} {:<5}     {:<15}{:<5}"
+    output = output_format.format("ID", "Interval", "Transfer", "Rate") 
+    output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
+    f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f"{total_data}", f"{transfer_rate}")
+    print(output)
+
 
 
 
