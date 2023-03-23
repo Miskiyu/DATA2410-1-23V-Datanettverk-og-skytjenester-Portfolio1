@@ -54,11 +54,14 @@ def mota_melding(sock): #another function/thread to listen for messages
 def send(sock):
     total_data_sendt =0
     intervall_data_sendt = 0
-    while True: 
-        data =  b"0" * 1000
-        antall= args.num
-        start_time = time.time()
+
+    data =  b"0" * 1000 
+    start_time = time.time()
+    if not args.num: 
         while time.time()- start_time <args.time:
+             sock.send(data)
+    antall= args.num
+    while time.time()- start_time <args.time:
               for i in range (antall/1000):
                   sock.send(data)
         
