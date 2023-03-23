@@ -52,15 +52,26 @@ def mota_melding(sock): #another function/thread to listen for messages
 
 
 def send(sock):
+    total_data_sendt =0
+    intervall_data_sendt = 0
     while True: 
-        data =  b"0" * args.num
-        chunk_size = 1000
+        data =  b"0" * 1000
+        antall= args.num
         start_time = time.time()
         while time.time()- start_time <args.time:
-             for i in range (0, len(data), chunk_size):
-                 sock.send(data[i:i+chunk_size])
+              for i in range (antall/1000):
+                  sock.send(data)
+        
+           
         break
-    sock.send('BYE'.encode())    
+    sock.send('BYE'.encode())
+    tilbakemelding=sock.recv(1000).decode()   
+    #if (tilbakemelding=="ACK:BYE"):
+
+ # for i in range (0, len(data), chunk_size):
+             #    sock.send(data[i:i+chunk_size])
+              #   data_sendt += len(data)
+
 
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     timeStart=time.time()
@@ -70,7 +81,7 @@ def handle_client(connection,addr):#A client handler function, this function get
     while True:
         data = connection.recv(1024).decode() 
         data_lengt += len(data)
-        if(data == "BYE"):
+        if(data == "BYE"): 
             connection.send("ACK:BYE".encode())
             break
     end_time = time.time()
