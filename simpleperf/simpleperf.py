@@ -52,23 +52,31 @@ def mota_melding(sock): #another function/thread to listen for messages
 
 
 def send(sock):
-    total_data_sendt =0
+    data_sendt =0
     intervall_data_sendt = 0
-
+    bandwith = 0
     data =  b"0" * 1000 
     start_time = time.time()
     if not args.num: 
         while time.time()- start_time <args.time:
              sock.send(data)
-    antall= args.num
-    while time.time()- start_time <args.time:
-              for i in range (antall/1000):
-                  sock.send(data)
-        
-           
-        break
-    sock.send('BYE'.encode())
-    tilbakemelding=sock.recv(1000).decode()   
+             data_sendt += len(data)
+        end_time = time.time()
+        duration = end_time-start_time
+        if(args.format =="B"):
+            total_data = data_sendt
+        elif (args.format == "KB"):
+            total_data = data_sendt/1000
+        elif (args.format == "MB"):
+            total_data = data_sendt/1000000.0
+        sock.send('BYE'.encode())
+        bandwith = (data_sendt*8)/duration
+
+    print("TOTAL er +",total_data)
+    print("Bandwith", bandwith)
+            
+  
+    
     #if (tilbakemelding=="ACK:BYE"):
 
  # for i in range (0, len(data), chunk_size):
@@ -91,16 +99,16 @@ def handle_client(connection,addr):#A client handler function, this function get
     duration = end_time-start_time
     transfer_rate =(data_lengt / duration) * 8 / 1000000# Update transfer_rate on each iteration of the loop
     bandwidth =transfer_rate
-    regnut(duration,data_lengt,args)
+    #regnut(duration,data_lengt,args)
    
     "for å skrive ut til server "
-    """
+
     output_format = "{:<20} {:<5}     {:<15}{:<5}"
     output = output_format.format("ID", "Interval", "Transfer", "Rate") 
     output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
     f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{transfer_rate:.2f}")
+
     """
-    
     "For å skrive ut til klienten "
     output1_format = "{:<20} {:<5}     {:<15}{:<5}"
     output1 = output1_format.format("ID", "Interval", "Transfer", "Bandwidth") 
@@ -108,7 +116,8 @@ def handle_client(connection,addr):#A client handler function, this function get
     f"{addr[0]}:{addr[1]}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{bandwidth:.2f}")  
     connection.send(output1.encode())
     connection.close()
-
+"""
+"""
 def regnut(duration,data_length,args):
     total_data= 0
     if(args.format =="B"):
@@ -123,8 +132,7 @@ def regnut(duration,data_length,args):
     output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
     f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f"{total_data}", f"{transfer_rate}")
     print(output)
-
-
+"""
 
 
 def server(host, port): #main method
@@ -154,7 +162,7 @@ parser.add_argument("-t", "--time", type=int, help="Duration in seconds", defaul
 parser.add_argument('-i', "--interval", type=int,
                         help='Interval for statistics output in seconds')
 parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
-parser.add_argument('-n','--num', default=1000, type=int)
+parser.add_argument('-n','--num',  type=int)
 args = parser.parse_args()
 
 
