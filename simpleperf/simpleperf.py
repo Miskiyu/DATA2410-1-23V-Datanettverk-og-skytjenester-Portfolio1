@@ -13,6 +13,7 @@ import threading #importing needed packets
 import argparse
 import re
 import time
+from tabulate import tabulate
 
 DISCONNECT = "bye"
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
@@ -50,6 +51,16 @@ def mota_melding(sock): #another function/thread to listen for messages
   
     print(data_length)
 
+def formater_num(val):
+    if not re.match(r"\d+(B|KB|MB)",val):
+        raise Exception("Formate av bytes du kan sende er et tall og enten B,KB eller MB")
+    a = int(re.findall(r"\d+",val)[0])
+    if re.findall(r'(KB)',val):
+        return a*1000
+    elif re.findall(f'(MB)',val):
+        return 1000000*a
+    return a
+    
 
 def send(sock):
     data_sendt =0
@@ -71,10 +82,12 @@ def send(sock):
             total_data = data_sendt/1000000.0
         sock.send('BYE'.encode())
         bandwith = (data_sendt*8)/duration
-
-    print("TOTAL er +",total_data)
-    print("Bandwith", bandwith)
-            
+    if sock.recv(100).decode()== "ACK:BYE":
+        break
+    
+    data = [[f"{args.bind}:{args.port}",f"0.0-{duration:.1f}",f" {total_data}",f"{bandwith:.2f}"]]
+    headers = ['ID', 'Interval','Transfer','Bandwith']
+    print(tabulate(data, headers=headers))
   
     
     #if (tilbakemelding=="ACK:BYE"):
@@ -102,21 +115,11 @@ def handle_client(connection,addr):#A client handler function, this function get
     #regnut(duration,data_lengt,args)
    
     "for å skrive ut til server "
-
-    output_format = "{:<20} {:<5}     {:<15}{:<5}"
-    output = output_format.format("ID", "Interval", "Transfer", "Rate") 
-    output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
-    f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{transfer_rate:.2f}")
-
-    """
-    "For å skrive ut til klienten "
-    output1_format = "{:<20} {:<5}     {:<15}{:<5}"
-    output1 = output1_format.format("ID", "Interval", "Transfer", "Bandwidth") 
-    output1 += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
-    f"{addr[0]}:{addr[1]}", f"0.0-{duration:.1f}",f" {data_lengt}", f"{bandwidth:.2f}")  
-    connection.send(output1.encode())
+    data = [[f"{args.bind}:{args.port}",f"0.0-{duration:.1f}",f" {data_lengt}",f"{transfer_rate:.2f}"]]
+    headers = ['ID', 'Interval','Transfer','Rate']
+    print(tabulate(data, headers=headers))
     connection.close()
-"""
+
 """
 def regnut(duration,data_length,args):
     total_data= 0
@@ -162,9 +165,14 @@ parser.add_argument("-t", "--time", type=int, help="Duration in seconds", defaul
 parser.add_argument('-i', "--interval", type=int,
                         help='Interval for statistics output in seconds')
 parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
-parser.add_argument('-n','--num',  type=int)
+parser.add_argument('-n','--num',  type=formater_num)
 args = parser.parse_args()
 
+
+
+if args.server and args.client:
+        print("Error: Cannot run both server and client mode")
+        sys.exit()
 
 if args.server:
     server(args.bind,args.port)
