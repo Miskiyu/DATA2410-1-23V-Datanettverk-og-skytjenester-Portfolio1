@@ -62,16 +62,32 @@ def formater_num(val):
     return a
     
 
-def send(sock):
+def send(sock):   
+    print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
     data_sendt =0
-    intervall_data_sendt = 0
+
     bandwith = 0
     data =  b"0" * 1000 
+    total_data_sent = 0
     start_time = time.time()
+    last_print_time = start_time
     if not args.num: 
         while time.time()- start_time <args.time:
              sock.send(data)
              data_sendt += len(data)
+             total_data_sent +=len(data)
+             if args.intervall:
+                 if time.time() - last_print_time > args.intervall:
+                     elapsed_time = time.time() - start_time
+                     interval_start = elapsed_time - args.intervall
+                     last_print_time = time.time()
+                     interval_end = elapsed_time
+                     bandwidth = (total_data_sent/ args.intervall) / 1000000
+                     result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
+                     headers = ['ID', 'Interval','Transfer','Bandwith']
+                     print(tabulate(result, headers=headers))
+                     last_print_time = time.time()
+                 
         end_time = time.time()
         duration = end_time-start_time
         if(args.format =="B"):
@@ -81,14 +97,18 @@ def send(sock):
         elif (args.format == "MB"):
             total_data = data_sendt/1000000.0
         sock.send('BYE'.encode())
+        melding =  sock.recv(1024).decode() 
+        if melding == "ACK:BYE":
+            exit()
         bandwith = (data_sendt*8)/duration
-    if sock.recv(100).decode()== "ACK:BYE":
-        break
+
+        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data}",f"{bandwith:.2f}"]]
+        headers = ['ID', 'Interval','Transfer','Bandwith']
+        print(tabulate(data, headers=headers))
     
-    data = [[f"{args.bind}:{args.port}",f"0.0-{duration:.1f}",f" {total_data}",f"{bandwith:.2f}"]]
-    headers = ['ID', 'Interval','Transfer','Bandwith']
-    print(tabulate(data, headers=headers))
-  
+    if args.num:
+        exit
+
     
     #if (tilbakemelding=="ACK:BYE"):
 
@@ -120,24 +140,6 @@ def handle_client(connection,addr):#A client handler function, this function get
     print(tabulate(data, headers=headers))
     connection.close()
 
-"""
-def regnut(duration,data_length,args):
-    total_data= 0
-    if(args.format =="B"):
-        total_data = data_length
-    elif (args.format == "KB"):
-        total_data = f"{data_length/1000:.0f}"
-    elif (args.format == "MB"):
-        total_data = f"{data_length/1000000.0:.0f}"
-    transfer_rate =((float(total_data))/ duration) * 8 / 1000000
-    output_format = "{:<20} {:<5}     {:<15}{:<5}"
-    output = output_format.format("ID", "Interval", "Transfer", "Rate") 
-    output += "\n{:<20} {:<5}     {:<15} {:<5} ".format(
-    f"{args.bind}:{args.port}", f"0.0-{duration:.1f}",f"{total_data}", f"{transfer_rate}")
-    print(output)
-"""
-
-
 def server(host, port): #main method
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -145,24 +147,26 @@ def server(host, port): #main method
     except:
         print("Feil til å koble seg på")
 	
+    print('------------------------------------------------')
     print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
+    print('-------------------------------------------------')
     sock.listen()
     while True: #always true, this will always loop, and wait for new cleints to connect
         connectionSocket, addr = sock.accept() #Accepting a new connection
-        print(f"A simpleperf client with IP {str(args.server_ip)}:{str(args.port)} is connected with {str(args.server)}:{str(args.port)}")
+        print(f"A simpleperf client with IP {args.server_ip}:{str(args.port)} is connected with {addr[0]}:{args.port}")
         thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
         thread.start()
                 
 
 parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
-parser.add_argument('-b', '--bind', default='localhost', type=str, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=str, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
-parser.add_argument("-I", "--server_ip", type=str, help="server IP address for client mode")
+parser.add_argument("-I", "--server_ip", type=str, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
 parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
 
-parser.add_argument('-i', "--interval", type=int,
+parser.add_argument('-i', "--intervall", type=int,
                         help='Interval for statistics output in seconds')
 parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
 parser.add_argument('-n','--num',  type=formater_num)
@@ -170,11 +174,12 @@ args = parser.parse_args()
 
 
 
+
 if args.server and args.client:
         print("Error: Cannot run both server and client mode")
         sys.exit()
 
-if args.server:
+elif args.server:
     server(args.bind,args.port)
 
 elif args.client: 
@@ -183,6 +188,9 @@ elif args.client:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                  sock.connect((args.server_ip,args.port))
+                 print('--------------------------------------------------------------------------------')
+                 print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
+                 print('--------------------------------------------------------------------------------')
             except:
                 print("Error: failed to connect to client")
             t1 = threading.Thread(target=mota_melding, args=(sock,))
@@ -191,8 +199,10 @@ elif args.client:
             t2.start()
     else:
         print("-P kan ikke være større enn 5")
+        sys.exit()
 else:
 	print("Error: you must run either in server or client mode")
+ 
 	    
 
 
