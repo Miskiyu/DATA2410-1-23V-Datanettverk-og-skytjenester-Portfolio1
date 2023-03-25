@@ -205,3 +205,47 @@ else:
 	print("Error: you must run either in server or client mode")
 	    
 	    
+def send(sock):   
+    print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
+    data_sendt =0
+
+    bandwith = 0
+    data =  b"0" * 1000 
+    total_data_sent = 0
+    start_time = time.time()
+    intervall_time =time.time()
+    if not args.num: 
+        while time.time()- start_time <args.time:
+             sock.send(data)
+             data_sendt += len(data)
+             total_data_sent +=len(data)
+             current_time = time.time()
+             elapsed_time = current_time - intervall_time
+             if args.intervall and elapsed_time >= args.intervall:
+                 bandwidth = (total_data_sent/ args.intervall) / 1000000
+                 result= [[f"{args.server_ip}:{args.port}",f"{intervall_time:.1f} - {current_time:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]                    
+                 headers = ['ID', 'Interval','Transfer','Bandwith']
+                 print(tabulate(result, headers=headers))
+                 intervall_time= current_time
+                 total_data_sent = 0
+             if elapsed_time >= args.time:
+                 break
+                 
+        end_time = time.time()
+        duration = end_time-start_time
+        if(args.format =="B"):
+            total_data = data_sendt
+        elif (args.format == "KB"):
+            total_data = data_sendt/1000
+        elif (args.format == "MB"):
+            total_data = data_sendt/1000000.0
+        sock.send('BYE'.encode())
+        melding =  sock.recv(1024).decode() 
+        if melding == "ACK:BYE":
+            exit()
+        bandwith = (data_sendt*8)/duration
+
+        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data}",f"{bandwith:.2f}"]]
+        headers = ['ID', 'Interval','Transfer','Bandwith']
+        print(tabulate(data, headers=headers))
+        sock.close()
