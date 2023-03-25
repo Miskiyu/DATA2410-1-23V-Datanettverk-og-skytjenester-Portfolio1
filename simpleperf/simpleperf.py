@@ -1,3 +1,8 @@
+"""
+DATA 2410EKSAMEN: 
+"""
+
+
 import _thread as thread #importing needed packets
 import socket
 import sys
