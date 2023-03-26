@@ -62,10 +62,10 @@ def formater_num(val):
 
     
 
-def send(sock):   
+def send(sock,args):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
     data_sendt =0
-    bandwith = 0
+    bandwidth=0
     data =  b"0" * 1000 
     total_data_sent = 0
     start_time = time.time()
@@ -98,15 +98,24 @@ def send(sock):
         end_time = time.time()
         duration = end_time-start_time
         sock.send('BYE'.encode())
-        melding =  sock.recv(1024).decode() 
-        if melding == "ACK:BYE":
-            exit()
-        skrifUt(duration, data_sendt)
+        if(args.format =="B"):
+            total_data = data_sendt
+        elif (args.format == "KB"):
+            total_data = data_sendt/1000
+        else:
+            total_data = data_sendt/1000000.0
+
+        bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
+        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results
+        headers = ['ID', 'Interval','Transfer','Bandwith']
+        
+        print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
+
 
                     
     if args.num:
         data_sendt =0
-        bandwith = 0
+        bandwidth=0
         data =  b"0" * 1000 
         total_data_sent = 0
         total_data=0
@@ -118,33 +127,24 @@ def send(sock):
             sock.send(data[:send_size])
             data_sendt += send_size
         sock.send('BYE'.encode())
-        melding =  sock.recv(1024).decode() 
-        if melding == "ACK:BYE":
-            exit()
         end_time = time.time()
         duration = end_time - start_time
-        skrifUt(duration,data_sendt)
+        if(args.format =="B"):
+            total_data = data_sendt
+        elif (args.format == "KB"):
+            total_data = data_sendt/1000
+        else:
+            total_data = data_sendt/1000000.0
+
+        bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
+        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results
+        headers = ['ID', 'Interval','Transfer','Bandwith']
+        print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
+    sock.close()
        
         
      
 
-#Functions takes two argument, duration and data_sendt.It calculates total data transferred
-#and the bandwidth used during the data transfer session.
-def skrifUt(duration, data_sendt):
-    bandwidth=0
-    total_data = 0
-    #checks the args.format to determine if the data should be displayed in bytes, kilobytes, or megabytes. 
-    if(args.format =="B"):
-        total_data = data_sendt
-    elif (args.format == "KB"):
-        total_data = data_sendt/1000
-    else:
-        total_data = data_sendt/1000000.0
-
-    bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
-    data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results
-    headers = ['ID', 'Interval','Transfer','Bandwith']
-    print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
 
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     data_lengt=0
@@ -180,6 +180,7 @@ def server(host, port): #main method
         sock.bind((host,port))	
     except:
         print("Feil til å koble seg på")
+        sys.exit()
 	
     print('------------------------------------------------')
     print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
@@ -227,8 +228,9 @@ elif args.client:
                  print('--------------------------------------------------------------------------------')
             except:
                 print("Error: failed to connect to client")
+                sys.exit()
             t1 = threading.Thread(target=mota_melding, args=(sock,))
-            t2 = threading.Thread(target=send, args=(sock,))
+            t2 = threading.Thread(target=send, args=(sock,args))
             t1.start()
             t2.start()
     else:
