@@ -45,9 +45,7 @@ def mota_melding(sock):
               print(msg)
               break
          print(msg)
-    data_length = sock.recv(1024).decode()
   
-    print(data_length)
 
 #A function that takes a string as input and formats it to a number in bytes
 def formater_num(val):
@@ -64,55 +62,6 @@ def formater_num(val):
 
 def send(sock,args):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
-    data_sendt =0
-    bandwidth=0
-    data =  b"0" * 1000 
-    total_data_sent = 0
-    start_time = time.time()
-    last_print_time = start_time
-    if not args.num: 
-        while time.time()- start_time <args.time:
-             sock.send(data)
-             data_sendt += len(data)
-             total_data_sent +=len(data)
-             if args.intervall:
-                 if time.time() - last_print_time > args.intervall:
-                     elapsed_time = time.time() - start_time
-                     interval_start = elapsed_time - args.intervall
-                     last_print_time = time.time()
-                     interval_end = elapsed_time
-                     bandwidth = (total_data_sent/ args.intervall) / 1000000
-                     result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
-                     headers = ['ID', 'Interval','Transfer','Bandwith']
-                     print(tabulate(result, headers=headers))
-                     last_print_time = time.time()
-        ##printer final intervall           
-        if args.intervall:
-            elapsed_time = time.time() - start_time
-            interval_start = elapsed_time - args.intervall
-            interval_end = elapsed_time
-            bandwidth = (total_data_sent / args.intervall) / 1000000
-            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
-            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-            print(tabulate(result, headers=headers))
-        end_time = time.time()
-        duration = end_time-start_time
-        sock.send('BYE'.encode())
-        if(args.format =="B"):
-            total_data = data_sendt
-        elif (args.format == "KB"):
-            total_data = data_sendt/1000
-        else:
-            total_data = data_sendt/1000000.0
-
-        bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
-        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results
-        headers = ['ID', 'Interval','Transfer','Bandwith']
-        
-        print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
-
-
-                    
     if args.num:
         data_sendt =0
         bandwidth=0
@@ -129,17 +78,53 @@ def send(sock,args):
         sock.send('BYE'.encode())
         end_time = time.time()
         duration = end_time - start_time
-        if(args.format =="B"):
-            total_data = data_sendt
-        elif (args.format == "KB"):
-            total_data = data_sendt/1000
-        else:
-            total_data = data_sendt/1000000.0
+    else:
+        data_sendt =0
+        bandwidth=0
+        data =  b"0" * 1000 
+        total_data_sent = 0
+        start_time = time.time()
+        last_print_time = start_time
+    
+        while time.time()- start_time <args.time:
+             sock.send(data)
+             data_sendt += len(data)
+             total_data_sent +=len(data)
+              
+             if args.intervall and time.time() - last_print_time > args.intervall:
+                 elapsed_time = time.time() - start_time
+                 interval_start = elapsed_time - args.intervall
+                 last_print_time = time.time()
+                 interval_end = elapsed_time
+                 bandwidth = (total_data_sent/ args.intervall) / 1000000
+                 result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
+                 headers = ['ID', 'Interval','Transfer','Bandwith']
+                 print(tabulate(result, headers=headers))
+        if args.intervall:
+            elapsed_time = time.time() - start_time
+            interval_start = elapsed_time - args.intervall
+            interval_end = elapsed_time
+            bandwidth = (total_data_sent / args.intervall) / 1000000
+            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
+            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+            print(tabulate(result, headers=headers))
+    end_time = time.time()
+    duration = end_time-start_time
+    sock.send('BYE'.encode())
+    if(args.format =="B"):
+         total_data = data_sendt
+    elif (args.format == "KB"):
+        total_data = data_sendt/1000
+    else:
+        total_data = data_sendt/1000000.0
+    bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
+    headers = ['ID', 'Interval','Transfer','Bandwith']
+    data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results        headers = ['ID', 'Interval','Transfer','Bandwith']
+    print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
 
-        bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
-        data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results
-        headers = ['ID', 'Interval','Transfer','Bandwith']
-        print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
+
+                    
+    #Then prints the using the tabulate function from the tabulate module.
     sock.close()
        
         
