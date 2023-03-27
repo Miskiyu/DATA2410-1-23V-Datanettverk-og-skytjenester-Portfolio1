@@ -62,7 +62,6 @@ def formater_num(val):
 
 def send(sock):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
-    
     if args.num:
         data_sendt =0
         bandwidth = 0
