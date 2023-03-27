@@ -45,7 +45,7 @@ def mota_melding(sock):
               print(msg)
               break
          print(msg)
-  
+
 
 #A function that takes a string as input and formats it to a number in bytes
 def formater_num(val):
@@ -60,11 +60,12 @@ def formater_num(val):
 
     
 
-def send(sock,args):   
+def send(sock):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
+    
     if args.num:
         data_sendt =0
-        bandwidth=0
+        bandwidth = 0
         data =  b"0" * 1000 
         total_data_sent = 0
         total_data=0
@@ -78,13 +79,15 @@ def send(sock,args):
         sock.send('BYE'.encode())
         end_time = time.time()
         duration = end_time - start_time
+                
     else:
-        data_sendt =0
-        bandwidth=0
+        data_sendt = 0
+        bandwidth = 0
         data =  b"0" * 1000 
         total_data_sent = 0
         start_time = time.time()
         last_print_time = start_time
+        interval_start = start_time
     
         while time.time()- start_time <args.time:
              sock.send(data)
@@ -93,21 +96,22 @@ def send(sock,args):
               
              if args.intervall and time.time() - last_print_time > args.intervall:
                  elapsed_time = time.time() - start_time
-                 interval_start = elapsed_time - args.intervall
                  last_print_time = time.time()
                  interval_end = elapsed_time
                  bandwidth = (total_data_sent/ args.intervall) / 1000000
                  result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
                  headers = ['ID', 'Interval','Transfer','Bandwith']
                  print(tabulate(result, headers=headers))
+                 interval_start = elapsed_time
         if args.intervall:
             elapsed_time = time.time() - start_time
-            interval_start = elapsed_time - args.intervall
             interval_end = elapsed_time
             bandwidth = (total_data_sent / args.intervall) / 1000000
             result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
             headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
             print(tabulate(result, headers=headers))
+            interval_start = elapsed_time
+
     end_time = time.time()
     duration = end_time-start_time
     sock.send('BYE'.encode())
@@ -121,12 +125,13 @@ def send(sock,args):
     headers = ['ID', 'Interval','Transfer','Bandwith']
     data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results        headers = ['ID', 'Interval','Transfer','Bandwith']
     print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
+  
+   
+  
 
 
                     
-    #Then prints the using the tabulate function from the tabulate module.
-    sock.close()
-       
+ 
         
      
 
@@ -154,7 +159,7 @@ def handle_client(connection,addr):#A client handler function, this function get
     transfer_rate =(data_lengt / duration) * 8 / 1000000# Update transfer_rate on each iteration of the loop
   
     #Creates a table to display the results
-    data = [[f"{args.bind}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{transfer_rate:.2f} Mbps"]]
+    data = [[f"{addr[0]}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{transfer_rate:.2f} Mbps"]]
     headers = ['ID', 'Interval','Transfer','Rate']
     print(tabulate(data, headers=headers))# The table is printed using the tabulate function from the tabulate module.
     connection.close()#then close the connections 
@@ -213,9 +218,8 @@ elif args.client:
                  print('--------------------------------------------------------------------------------')
             except:
                 print("Error: failed to connect to client")
-                sys.exit()
             t1 = threading.Thread(target=mota_melding, args=(sock,))
-            t2 = threading.Thread(target=send, args=(sock,args))
+            t2 = threading.Thread(target=send, args=(sock,))
             t1.start()
             t2.start()
     else:
