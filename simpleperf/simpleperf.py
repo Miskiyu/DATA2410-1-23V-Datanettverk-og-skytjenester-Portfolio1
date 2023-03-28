@@ -194,7 +194,7 @@ def server(host, port): #main method
                 
 #Defines and parses command line arguments using the argparse library in Python. 
 parser.add_argument('-s','--server', action='store_true')
-parser.add_argument('-p','--port', type=check_port)
+parser.add_argument('-p','--port', type=check_port, default=8088)
 parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=check_ip, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
