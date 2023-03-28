@@ -1,8 +1,6 @@
 """
 DATA 2410EKSAMEN: 
 """
-
-
 import _thread as thread #importing needed packets
 import socket
 import sys
@@ -31,22 +29,12 @@ def check_port(val):
 #This function takes in a single argument val. The purpose of the function is to check wheter the value provieded is a valid IP address 
 def check_ip(val):
     ip = re.match("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$",val)#function is using re to mathc the input val, withc a pattern that defines the format of an IP address
-    if(ip):  #if if is valid it return True
-        return True
+    if(ip):  #if ip is valid return ip
+        return val
     else:#if the string does not match the patter, the code prinst an error message andexit the progamr 
-        print("this is not valid ip-adress")
+        print("This is not valid ip-adress")
         sys.exit()  
 
-"""
-#a function that recive message from socket. It continously listens for message. 
-def mota_melding(sock):
-    while True:
-         msg = sock.recv(1000).decode() #revives a message and stores it in the variable msg
-         if msg == "ACK:BYE":   #if the messsage is ACK:BYE, then the message is printed, ant the loop is exited 
-              print(msg)
-              break
-         print(msg)
-"""
 
 #A function that takes a string as input and formats it to a number in bytes
 def formater_num(val):
@@ -62,8 +50,65 @@ def formater_num(val):
 
 def send(sock):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
+    if args.intervall and args.time: 
+        data_sendt = 0
+        total_data_sent = 0
+        data = b'0'*1000
+        end_time=time.time()+args.time
+        start_time = time.time()
+        intervall = args.intervall
+        interval_start =  0
+        while time.time() <end_time:
+            sock.send(data)
+            data_sendt += len(data)
+            if time.time() > intervall + start_time:
+                elapsed_time = time.time() - start_time
+                total_data_sent += data_sendt
+                interval_end = elapsed_time
+                bandwidth = (total_data_sent/ 1000000) / args.time
+                result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
+                headers = ['ID', 'Interval','Transfer','Bandwith']
+                print(tabulate(result, headers=headers))
+                intervall+= args.intervall
+                interval_start = elapsed_time
+        sock.send("BYE".encode())
+        skrivut(sock, data_sendt)
     
-    if args.time and args.intervall is None:
+    #num 
+    elif args.num:
+        data_sendt =0
+        bandwidth = 0
+        data =  b"0" * 1000 
+        data_to_send = args.num
+        start_time = time.time()
+        remaining_data = 0
+        for i in range(999, data_to_send,1000):
+            sock.send(data)
+            data_sendt += len(data)
+            remaining_data = data_to_send - data_sendt
+        if remaining_data !=0:
+            sock.send(b'0'*remaining_data)
+            data_sendt +=len(remaining_data)
+        sock.send('BYE'.encode())
+        end_time = time.time()
+        duration = end_time - start_time
+        if duration == 0:
+            duration = 1
+        melding = sock.recv(1000).decode()
+        if melding ==("ACK:BYE"):
+            print(melding)
+            bandwith = (data_sendt/1000000)/duration
+            if(args.format =="B"):
+                total_data = data_sendt
+            elif (args.format == "KB"):
+                total_data = data_sendt/1000
+            else:
+                total_data = data_sendt/1000000.0 
+            result = [[f"{args.server_ip}:{args.port}", f"0.0-{duration:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+            print(tabulate(result, headers=headers))
+    
+    else:
         data = b'0'*1000
         end = time.time() + args.time
         byte_send = 0
@@ -73,96 +118,6 @@ def send(sock):
         sock.send("BYE".encode())
         skrivut(sock,byte_send)
 
-    if args.intervall and args.time: 
-        data_sendt = 0
-        total = args.time
-        data = b'0'*1000
-        intervall = args.intervall
-        start_time=0
-        timeStart = time.time()
-        for i in range(0, total,intervall):
-            sock.send(data)
-            while True:
-                if time.time() - timeStart > intervall:
-                    data_sendt += len(data)
-                    endtime = "%.1f" % ( start_time + (time.time()- timeStart))
-                    start_time = "%.1f" % start_time
-                    print(f"{start_time} - {endtime}", f"{data_sendt}")
-                    start_time= float(start_time) + (time.time()-timeStart)
-                    timeStart = time.time()
-                    break
-        start_time = 0
-        print (f"{start_time} - {endtime}", f"{data_sendt}")
-        
-        
-        
-        
-    """
-         data_sendt = 0
-         bandwidth = 0
-         data =  b"0" * 1000 
-         total_data_sent = 0
-         start_time = time.time()
-         last_print_time = start_time
-         interval_start = start_time
-    
-
-         while time.time()- start_time <args.time:
-             sock.send(data)
-             data_sendt += len(data)
-             total_data_sent +=len(data)
-              
-             if time.time() - last_print_time > args.intervall:
-                 elapsed_time = time.time() - start_time
-                 last_print_time = time.time()
-                 interval_end = elapsed_time
-                 bandwidth = (total_data_sent/ args.intervall) / 1000000
-                 result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
-                 headers = ['ID', 'Interval','Transfer','Bandwith']
-                 print(tabulate(result, headers=headers))
-                 interval_start = elapsed_time
-         if args.intervall:
-            elapsed_time = time.time() - start_time
-            interval_end = elapsed_time
-            bandwidth = (total_data_sent / args.intervall) / 1000000
-            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
-            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-            print(tabulate(result, headers=headers))
-            interval_start = elapsed_time
-    
-    end_time = time.time()
-    duration = end_time-start_time
-    sock.send('BYE'.encode())
-    if(args.format =="B"):
-         total_data = data_sendt
-    elif (args.format == "KB"):
-        total_data = data_sendt/1000
-    else:
-        total_data = data_sendt/1000000.0
-    bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
-    headers = ['ID', 'Interval','Transfer','Bandwith']
-    data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results        headers = ['ID', 'Interval','Transfer','Bandwith']
-    print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
-  """
-   
-
-
-    if args.num:
-        data_sendt =0
-        bandwidth = 0
-        data =  b"0" * 1000 
-        total_data_sent = 0
-        total_data=0
-        data_to_send = args.num
-        start_time = time.time()
-        while data_sendt < data_to_send:
-            remaining_data = data_to_send - data_sendt
-            send_size = min(remaining_data, len(data))
-            sock.send(data[:send_size])
-            data_sendt += send_size
-        sock.send('BYE'.encode())
-        end_time = time.time()
-        duration = end_time - start_time
                 
 
 
@@ -180,12 +135,6 @@ def skrivut(sock,byte_send):
         result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
         print(tabulate(result, headers=headers))
-
-
-                    
- 
-        
-     
 
 
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
@@ -237,10 +186,10 @@ def server(host, port): #main method
 #Defines and parses command line arguments using the argparse library in Python. 
 parser.add_argument('-s','--server', action='store_true')
 parser.add_argument('-p','--port', type=check_port)
-parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=str, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=check_ip, help='The IP address to bind to (default: localhost)')
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
 parser.add_argument('-c','--client', action='store_true')
-parser.add_argument("-I", "--server_ip", type=str, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
+parser.add_argument("-I", "--server_ip", type=check_ip, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
 parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
 
 parser.add_argument('-i', "--intervall", type=int,
