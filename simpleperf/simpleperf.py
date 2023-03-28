@@ -57,22 +57,32 @@ def send(sock):
         end_time=time.time()+args.time
         start_time = time.time()
         intervall = args.intervall
+        intervall_sendt = 0
         interval_start =  0
         while time.time() <end_time:
             sock.send(data)
             data_sendt += len(data)
             if time.time() > intervall + start_time:
+                total_data_sent += data_sendt
                 elapsed_time = time.time() - start_time
                 total_data_sent += data_sendt
                 interval_end = elapsed_time
-                bandwidth = (total_data_sent/ 1000000) / args.time
-                result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
+                bandwidth = (data_sendt/1000000*8) / args.intervall
+                print(intervall_sendt)
+                if(args.format =="B"):
+                    total_data = intervall_sendt
+                elif (args.format == "KB"):
+                    total_data = intervall_sendt/1000
+                else:
+                    total_data = data_sendt/1000000.0 
+                result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {total_data:.1f}{args.format}",f"{ bandwidth:.2f}Mbps"]]
                 headers = ['ID', 'Interval','Transfer','Bandwith']
                 print(tabulate(result, headers=headers))
                 intervall+= args.intervall
                 interval_start = elapsed_time
+                data_sendt = 0
         sock.send("BYE".encode())
-        skrivut(sock, data_sendt)
+        skrivut(sock, total_data_sent)
     
     #num 
     elif args.num:
@@ -97,7 +107,7 @@ def send(sock):
         melding = sock.recv(1000).decode()
         if melding ==("ACK:BYE"):
             print(melding)
-            bandwith = (data_sendt/1000000)/duration
+            bandwith = (data_sendt/1000000*8)/(duration)
             if(args.format =="B"):
                 total_data = data_sendt
             elif (args.format == "KB"):
@@ -124,8 +134,7 @@ def send(sock):
 def skrivut(sock,byte_send):
     melding = sock.recv(1000).decode()
     if melding ==("ACK:BYE"):
-        print(melding)
-        bandwith = (byte_send/1000000)/args.time
+        bandwith = (byte_send/1000000*8)/(args.time)
         if(args.format =="B"):
          total_data = byte_send
         elif (args.format == "KB"):
