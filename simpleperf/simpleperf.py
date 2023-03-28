@@ -70,12 +70,12 @@ def send(sock):
                 bandwidth = (data_sendt/1000000*8) / args.intervall
                 print(intervall_sendt)
                 if(args.format =="B"):
-                    total_data = intervall_sendt
+                    total_data = data_sendt
                 elif (args.format == "KB"):
-                    total_data = intervall_sendt/1000
+                    total_data = data_sendt/1000
                 else:
                     total_data = data_sendt/1000000.0 
-                result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {total_data:.1f}{args.format}",f"{ bandwidth:.2f}Mbps"]]
+                result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {total_data:.0f} {args.format}",f"{ bandwidth:.2f}Mbps"]]
                 headers = ['ID', 'Interval','Transfer','Bandwith']
                 print(tabulate(result, headers=headers))
                 intervall+= args.intervall
