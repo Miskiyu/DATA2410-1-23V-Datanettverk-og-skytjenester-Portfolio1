@@ -37,6 +37,7 @@ def check_ip(val):
         print("this is not valid ip-adress")
         sys.exit()  
 
+"""
 #a function that recive message from socket. It continously listens for message. 
 def mota_melding(sock):
     while True:
@@ -45,7 +46,7 @@ def mota_melding(sock):
               print(msg)
               break
          print(msg)
-
+"""
 
 #A function that takes a string as input and formats it to a number in bytes
 def formater_num(val):
@@ -58,10 +59,94 @@ def formater_num(val):
         return 1000000*a
     return a         #if the input is B then the value of a returns
 
-    
 
 def send(sock):   
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
+    
+    if args.time and args.intervall is None:
+        data = b'0'*1000
+        end = time.time() + args.time
+        byte_send = 0
+        while time.time() < end:
+            sock.send(data)
+            byte_send += len(data)
+        sock.send("BYE".encode())
+        skrivut(sock,byte_send)
+
+    if args.intervall and args.time: 
+        data_sendt = 0
+        total = args.time
+        data = b'0'*1000
+        intervall = args.intervall
+        start_time=0
+        timeStart = time.time()
+        for i in range(0, total,intervall):
+            sock.send(data)
+            while True:
+                if time.time() - timeStart > intervall:
+                    data_sendt += len(data)
+                    endtime = "%.1f" % ( start_time + (time.time()- timeStart))
+                    start_time = "%.1f" % start_time
+                    print(f"{start_time} - {endtime}", f"{data_sendt}")
+                    start_time= float(start_time) + (time.time()-timeStart)
+                    timeStart = time.time()
+                    break
+        start_time = 0
+        print (f"{start_time} - {endtime}", f"{data_sendt}")
+        
+        
+        
+        
+    """
+         data_sendt = 0
+         bandwidth = 0
+         data =  b"0" * 1000 
+         total_data_sent = 0
+         start_time = time.time()
+         last_print_time = start_time
+         interval_start = start_time
+    
+
+         while time.time()- start_time <args.time:
+             sock.send(data)
+             data_sendt += len(data)
+             total_data_sent +=len(data)
+              
+             if time.time() - last_print_time > args.intervall:
+                 elapsed_time = time.time() - start_time
+                 last_print_time = time.time()
+                 interval_end = elapsed_time
+                 bandwidth = (total_data_sent/ args.intervall) / 1000000
+                 result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
+                 headers = ['ID', 'Interval','Transfer','Bandwith']
+                 print(tabulate(result, headers=headers))
+                 interval_start = elapsed_time
+         if args.intervall:
+            elapsed_time = time.time() - start_time
+            interval_end = elapsed_time
+            bandwidth = (total_data_sent / args.intervall) / 1000000
+            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
+            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+            print(tabulate(result, headers=headers))
+            interval_start = elapsed_time
+    
+    end_time = time.time()
+    duration = end_time-start_time
+    sock.send('BYE'.encode())
+    if(args.format =="B"):
+         total_data = data_sendt
+    elif (args.format == "KB"):
+        total_data = data_sendt/1000
+    else:
+        total_data = data_sendt/1000000.0
+    bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
+    headers = ['ID', 'Interval','Transfer','Bandwith']
+    data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results        headers = ['ID', 'Interval','Transfer','Bandwith']
+    print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
+  """
+   
+
+
     if args.num:
         data_sendt =0
         bandwidth = 0
@@ -79,54 +164,22 @@ def send(sock):
         end_time = time.time()
         duration = end_time - start_time
                 
-    else:
-        data_sendt = 0
-        bandwidth = 0
-        data =  b"0" * 1000 
-        total_data_sent = 0
-        start_time = time.time()
-        last_print_time = start_time
-        interval_start = start_time
-    
-        while time.time()- start_time <args.time:
-             sock.send(data)
-             data_sendt += len(data)
-             total_data_sent +=len(data)
-              
-             if args.intervall and time.time() - last_print_time > args.intervall:
-                 elapsed_time = time.time() - start_time
-                 last_print_time = time.time()
-                 interval_end = elapsed_time
-                 bandwidth = (total_data_sent/ args.intervall) / 1000000
-                 result= [[f"{args.server_ip}:{args.port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {data_sendt}",f"{ bandwidth:.2f}Mbps"]]
-                 headers = ['ID', 'Interval','Transfer','Bandwith']
-                 print(tabulate(result, headers=headers))
-                 interval_start = elapsed_time
-        if args.intervall:
-            elapsed_time = time.time() - start_time
-            interval_end = elapsed_time
-            bandwidth = (total_data_sent / args.intervall) / 1000000
-            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {data_sendt}", f"{bandwidth:.2f}Mbps"]]
-            headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-            print(tabulate(result, headers=headers))
-            interval_start = elapsed_time
 
-    end_time = time.time()
-    duration = end_time-start_time
-    sock.send('BYE'.encode())
-    if(args.format =="B"):
-         total_data = data_sendt
-    elif (args.format == "KB"):
-        total_data = data_sendt/1000
-    else:
-        total_data = data_sendt/1000000.0
-    bandwidth = (data_sendt * 8) / duration/ 1000000 #Calculates the bandwidth used during the data transfer session in Mbps (megabits per second).
-    headers = ['ID', 'Interval','Transfer','Bandwith']
-    data = [[f"{args.server_ip}:{args.port}",f"0.0-{duration:.1f}",f" {total_data:.0f} {args.format}",f"{bandwidth:.2f} Mbps"]]#Creates a table to display the results        headers = ['ID', 'Interval','Transfer','Bandwith']
-    print(tabulate(data, headers=headers)) #Then prints the using the tabulate function from the tabulate module.
-  
-   
-  
+
+def skrivut(sock,byte_send):
+    melding = sock.recv(1000).decode()
+    if melding ==("ACK:BYE"):
+        print(melding)
+        bandwith = (byte_send/1000000)/args.time
+        if(args.format =="B"):
+         total_data = byte_send
+        elif (args.format == "KB"):
+         total_data = byte_send/1000
+        else:
+         total_data = byte_send/1000000.0 
+        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+        print(tabulate(result, headers=headers))
 
 
                     
@@ -217,9 +270,9 @@ elif args.client:
                  print('--------------------------------------------------------------------------------')
             except:
                 print("Error: failed to connect to client")
-            t1 = threading.Thread(target=mota_melding, args=(sock,))
+           # t1 = threading.Thread(target=mota_melding, args=(sock,))
             t2 = threading.Thread(target=send, args=(sock,))
-            t1.start()
+            #t1.start()
             t2.start()
     else:
         print("-P kan ikke være større enn 5")
