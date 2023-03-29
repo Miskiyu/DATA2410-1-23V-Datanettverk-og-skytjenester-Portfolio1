@@ -188,7 +188,7 @@ def server(host, port): #main method
     sock.listen()
     while True: #always true, this will always loop, and wait for new cleints to connect
         connectionSocket, addr = sock.accept() #Accepting a new connection
-        print(f"A simpleperf client with IP {args.server_ip}:{str(args.port)} is connected with {addr[0]}:{args.port}")
+        print(f"A simpleperf client with IP {args.server_ip}:{str(args.port)} is connected with {args.bind}:{args.port}")
         thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
         thread.start()
                 
