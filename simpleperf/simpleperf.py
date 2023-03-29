@@ -236,9 +236,7 @@ elif args.client:
                  print('--------------------------------------------------------------------------------')
             except:
                 print("Error: failed to connect to client")
-           # t1 = threading.Thread(target=mota_melding, args=(sock,))
             t2 = threading.Thread(target=send, args=(sock,))
-            #t1.start()
             t2.start()
     else:
         print("-P kan ikke være større enn 5")
