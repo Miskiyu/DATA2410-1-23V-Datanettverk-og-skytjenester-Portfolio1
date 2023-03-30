@@ -46,7 +46,7 @@ def formater_num(val):
 
 
 def send(sock):   
-    print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
+    print("CLIENT CONNECTED WITH IP",args.server_ip,', PORT',args.port)
     ip = sock.getsockname()[0]
     port = sock.getsockname()[1]
     if args.intervall and args.time: 
@@ -126,7 +126,7 @@ def send(sock):
             headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
             print(tabulate(result, headers=headers))
     
-    else:
+    if args.time:
         data = b'0'*1000
         end = time.time() + args.time
         byte_send = 0
