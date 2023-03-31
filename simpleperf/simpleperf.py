@@ -46,35 +46,11 @@ def formater_num(val):
 
 
 def send(sock):   
-    print("CLIENT CONNECTED WITH IP",args.server_ip,', PORT',args.port)
+    print("Client connected with server",args.server_ip,', PORT',args.port)
     ip = sock.getsockname()[0]
     port = sock.getsockname()[1]
     
-      
-    if args.time:
-        data = b'0'*1000
-        end = time.time() + args.time
-        byte_send = 0
-        while time.time() < end:
-            sock.send(data)
-            byte_send += len(data)
-        sock.send("BYE".encode())
-        melding = sock.recv(1000).decode()
-        bandwith = (byte_send/1000000*8)/(args.time)
-        if(args.format =="B"):
-            total_data = byte_send
-        elif (args.format == "KB"):
-            total_data = byte_send/1000
-        else:
-             total_data = byte_send/1000000.0 
-        result = [[f"{ip}:{port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-        print(tabulate(result, headers=headers))
-
-                
-
-
-    
+        
     
     if args.intervall and args.time: 
         data_sendt = 0
@@ -152,6 +128,27 @@ def send(sock):
             result = [[f"{args.server_ip}:{args.port}", f"0.0-{duration:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
             headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
             print(tabulate(result, headers=headers))
+    
+    if args.time:
+        data = b'0'*1000
+        end = time.time() + args.time
+        byte_send = 0
+        while time.time() < end:
+            sock.send(data)
+            byte_send += 1000
+        sock.send("BYE".encode())
+        bandwith = (byte_send/1000000*8)/(args.time)
+        if(args.format =="B"):
+            total_data = byte_send
+        elif (args.format == "KB"):
+            total_data = byte_send/1000
+        else:
+             total_data = byte_send/1000000.0 
+        result = [[f"{ip}:{port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+        print(tabulate(result, headers=headers))
+
+          
   
 
 
