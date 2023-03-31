@@ -52,7 +52,8 @@ def send(sock):
     print("CLIENT CONNECTED WITH SERVER_IP",args.server_ip,', PORT',args.port)
     if args.time:
         data = b'0'*1000
-        end = time.time() + args.time
+        start = time.time()
+        end = start + args.time
         byte_send = 0
         while time.time() < end:
             sock.send(data)
