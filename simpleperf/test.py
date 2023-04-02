@@ -34,6 +34,8 @@ def check_ip(val):
     return val 
        
     
+   #ip = sock.getsockname()[0]
+    #port = sock.getsockname()[1]
 
 
 def format_bytes(val):

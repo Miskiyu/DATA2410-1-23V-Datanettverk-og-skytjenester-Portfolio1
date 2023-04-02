@@ -131,18 +131,15 @@ def handle_client(connection,addr):#A client handler function, this function get
 
 
 
-def client_send(sock,tid):
+def client_send(sock):
     if args.time:
-        send_for_duration(sock,tid)
-
-    #ip = sock.getsockname()[0]
-    #port = sock.getsockname()[1]
+        send_for_duration(sock)
 
     
-def send_for_duration(sock,duration):
+def send_for_duration(sock):
         data = b'0'*1000
         start = time.time()
-        end = start + duration
+        end = start + args.time
         byte_send = 0
         while time.time() < end:
             sock.send(data)
@@ -171,7 +168,7 @@ elif args.client:
             except:
                 print("Error: failed to connect to client")
                 sys.exit()
-            t2 = threading.Thread(target=client_send, args=(sock,args.time))
+            t2 = threading.Thread(target=client_send, args=(sock,))
             t2.start()
             print('--------------------------------------------------------------------------------')
             print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
