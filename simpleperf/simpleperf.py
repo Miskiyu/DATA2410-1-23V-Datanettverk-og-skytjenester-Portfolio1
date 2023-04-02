@@ -1,7 +1,7 @@
 """
 DATA 2410EKSAMEN: 
 """
-import _thread as thread #importing needed packets
+
 import socket
 import sys
 import threading #importing needed packets
@@ -47,17 +47,18 @@ def formater_num(val):
 
 #Fuction that takes in sock, and how much data send, and prints result
 def print_result(sock,byte_send):
-    bandwith = (byte_send/1000000*8)/(args.time)
-    if(args.format =="B"):
+   melding = sock.recv(1000).decode()
+   if "ACK:BYE" in melding:
+        bandwith = (byte_send/1000000*8)/(args.time)
+        if(args.format =="B"):
          total_data = byte_send
-    elif (args.format == "KB"):
+        elif (args.format == "KB"):
          total_data = byte_send/1000
-    else:
+        else:
          total_data = byte_send/1000000.0 
-    result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-    headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-    print(tabulate(result, headers=headers))
-
+        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+        print(tabulate(result, headers=headers))
                 
 #Defines and parses command line arguments using the argparse library in Python. 
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
@@ -81,6 +82,10 @@ args = parser.parse_args()
 
 
 """SERVER"""
+#this function creates a socket that listens on a specified host and port for incoming
+#  connections from clients. Once a client connects, a new thread is created to handle the
+# client's requests, and the server continues to listen for new connections. 
+# The function also prints out a message indicating that the server is listening on the specified port.
 def server(host, port): #main method
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -129,37 +134,147 @@ def handle_client(connection,addr):#A client handler function, this function get
     connection.close()#then close the connections 
 
 
-
-
+"""
+This function takes a socket as input, and based on the user-provided arguments,
+ calls the appropriate function to send data over the socket.
+ The three possible functions that can be called are num, send_for_duration, and send_at_intervals
+"""
 def client_send(sock):
-    if args.time:
-        send_for_duration(sock)
-
     
+    # If the user provided the "num" argument, call the "num" function
+    if args.num:
+        num(sock)
+    
+    # If the user provided the "time" argument, call the "send_for_duration" function
+    elif args.time:
+         send_for_duration(sock)
+    
+    # If the user provided the "interval" argument, call the "send_at_intervals" function
+    elif args.interval:
+         send_at_intervals(sock)
+
+
+#This function sends data over a socket for a specified duration of time. 
 def send_for_duration(sock):
-        data = b'0'*1000
-        start = time.time()
-        end = start + args.time
-        byte_send = 0
-        while time.time() < end:
-            sock.send(data)
-            byte_send += 1000
-          
-        sock.send("BYE".encode())
-        print_result(sock,byte_send)
+   
+    data = b'0'*1000  # Set the data to be sent as 1000 bytes of 0 
+    start = time.time()      # Get the start time of the function
+    end = start + args.time  # Set the end time to be the start time plus the duration specified in the arguments 
+    byte_send = 0    # Initialize a variable to keep track of the total number of bytes sent
+
+    while time.time() < end:    # Loop until the current time is greater than the end time
+        sock.send(data)    # Send the data over the socket
+        byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
+    
+    sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
+    print_result(sock, byte_send)    #  Print the result of the transmission
+
+
+def send_at_intervals(sock):
+    # Initialize variables to keep track of data sent and to send
+    data_sent = 0
+    total_data_sent = 0
+    data = b'0'*1000
+    # Calculate the end time for sending data
+    end_time = time.time() + args.time
+    start_time = time.time()
+    # Set the interval for sending data
+    interval = args.interval
+    interval_start = 0
+    # Keep sending data until the end time is reached
+    while time.time() < end_time:
+        # Send data
+        sock.send(data)
+        data_sent += len(data)
+        # Check if an interval has passed
+        if time.time() > interval + start_time:
+            # Calculate and print the results for the interval
+            total_data_sent += data_sent
+            elapsed_time = time.time() - start_time
+            interval_end = elapsed_time
+            bandwidth = (data_sent / 1000000 * 8) / args.interval
+            if args.format == "B":
+                total_data = data_sent
+            elif args.format == "KB":
+                total_data = data_sent / 1000
+            else:
+                total_data = data_sent / 1000000.0 
+            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps"]]
+            headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
+            print(tabulate(result, headers=headers))
+            # Update the interval start and reset the data sent
+            interval += args.interval
+            interval_start = elapsed_time
+            data_sent = 0
+    # Send a final message to the server indicating that the client is done
+    sock.send("BYE".encode())
+    # Print the total results for all intervals
+    print_result(sock, total_data_sent)
+
+
+
+#This function sends a specified number of bytes (args.num) over a socket connection (sock).
+#  It sends data in chunks of 1000 bytes until the specified size is reached. 
+# If there is any remaining data, it sends that as well. 
+# Then it sends a "BYE" command to signal the end of the data transfer.
+
+def num(sock):
+    # Initialize variables
+    sent_bytes = 0
+    data = b"0" * 1000
+    size = args.num
+    t0 = time.time()
+
+    # Send data in chunks of 1000 bytes until size is reached
+    for i in range(999, size, 1000):
+        sock.send(data)
+        sent_bytes += 1000
+
+    # Send remaining data
+    remaining_data = size % 1000
+    if remaining_data != 0:
+        sock.send(b'0' * remaining_data)
+        sent_bytes += remaining_data
+
+    # Send BYE command
+    sock.send('BYE'.encode())
+
+    # Calculate duration and bandwidth
+    end_time = time.time()
+    duration = end_time - t0
+    if duration == 0:
+        duration = 1
+    bandwidth = (sent_bytes / 1000000 * 8) / (duration)
+
+    # Print results
+    if args.format == "B":
+        total_data = sent_bytes
+    elif args.format == "KB":
+        total_data = sent_bytes / 1000
+    else:
+        total_data = sent_bytes / 1000000.0
+    result = [[f"{args.server_ip}:{args.port}", f"0.0-{duration:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+    headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+    print(tabulate(result, headers=headers))
+
+
+
+
 
 
 
 
 if args.server and args.client:
-        print("Error: Cannot run both server and client mode")
-        sys.exit()
+    print("Error: Cannot run both server and client mode")
+    sys.exit()
 
 elif args.server:
     server(args.bind,args.port)
 
 elif args.client: 
-    if(args.parallel >0 and args.parallel <6):       
+    # Check if the value of the '-P' argument is between 1 and 5 (inclusive)
+    if(args.parallel >0 and args.parallel <6):
+        # Create multiple client threads, each with its own socket
         for i in range(0, int(args.parallel)):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -168,15 +283,17 @@ elif args.client:
             except:
                 print("Error: failed to connect to client")
                 sys.exit()
+            # Create a new thread for the current client, and start it
             t2 = threading.Thread(target=client_send, args=(sock,))
             t2.start()
+            # Print a message indicating that a client is connecting to the server
             print('--------------------------------------------------------------------------------')
             print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
             print('--------------------------------------------------------------------------------')
     else:
+        # If the value of '-P' argument is not between 1 and 5, print an error message and exit
         print("-P kan ikke være større enn 5")
         sys.exit()
 else:
-	print("Error: you must run either in server or client mode")
- 
-	    
+    # If neither '-s' nor '-c' is specified, print an error message and exit
+    print("Error: you must run either in server or client mode")
