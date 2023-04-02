@@ -47,18 +47,16 @@ def formater_num(val):
 
 #Fuction that takes in sock, and how much data send, and prints result
 def print_result(sock,byte_send):
-    melding = sock.recv(1000).decode()
-    if "ACK:BYE" in melding:
-        bandwith = (byte_send/1000000*8)/(args.time)
-        if(args.format =="B"):
+    bandwith = (byte_send/1000000*8)/(args.time)
+    if(args.format =="B"):
          total_data = byte_send
-        elif (args.format == "KB"):
+    elif (args.format == "KB"):
          total_data = byte_send/1000
-        else:
+    else:
          total_data = byte_send/1000000.0 
-        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-        print(tabulate(result, headers=headers))
+    result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+    headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+    print(tabulate(result, headers=headers))
 
                 
 #Defines and parses command line arguments using the argparse library in Python. 
@@ -77,8 +75,6 @@ parser.add_argument('-i', "--intervall", type=int,
 parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
 parser.add_argument('-n','--num',  type=formater_num)
 args = parser.parse_args()
-
-
 
 
 
