@@ -136,7 +136,7 @@ def handle_client(connection,addr):#A client handler function, this function get
 
 
 def client_send(sock,tid):
-    if tid:
+    if args.time:
         send_for_duration(sock,tid)
 
     #ip = sock.getsockname()[0]
