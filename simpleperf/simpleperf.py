@@ -45,7 +45,7 @@ def formater_num(val):
     return a         #if the input is B then the value of a returns
 
 
-#
+#Fuction that takes in sock, and how much data send, and prints result
 def print_result(sock,byte_send):
     melding = sock.recv(1000).decode()
     if "ACK:BYE" in melding:
@@ -60,6 +60,23 @@ def print_result(sock,byte_send):
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
         print(tabulate(result, headers=headers))
 
+                
+#Defines and parses command line arguments using the argparse library in Python. 
+parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
+
+parser.add_argument('-s','--server', action='store_true')
+parser.add_argument('-p','--port', type=check_port, default=8088)
+parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=check_ip, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
+parser.add_argument('-c','--client', action='store_true')
+parser.add_argument("-I", "--server_ip", type=check_ip, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
+parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
+
+parser.add_argument('-i', "--intervall", type=int,
+                        help='Interval for statistics output in seconds')
+parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
+parser.add_argument('-n','--num',  type=formater_num)
+args = parser.parse_args()
 
 
 
@@ -85,23 +102,6 @@ def server(host, port): #main method
         print(f"A simpleperf client with IP {addr[0]}:{str(addr[1])} is connected with {args.bind}:{args.port}")
         thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
         thread.start()
-                
-#Defines and parses command line arguments using the argparse library in Python. 
-parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
-
-parser.add_argument('-s','--server', action='store_true')
-parser.add_argument('-p','--port', type=check_port, default=8088)
-parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=check_ip, help='The IP address to bind to (default: localhost)')
-parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
-parser.add_argument('-c','--client', action='store_true')
-parser.add_argument("-I", "--server_ip", type=check_ip, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
-parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
-
-parser.add_argument('-i', "--intervall", type=int,
-                        help='Interval for statistics output in seconds')
-parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
-parser.add_argument('-n','--num',  type=formater_num)
-args = parser.parse_args()
 
 
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
@@ -135,81 +135,27 @@ def handle_client(connection,addr):#A client handler function, this function get
 
 
 
-def send(sock):   
-    print("Client connected with server",args.server_ip,', PORT',args.port)
-    ip = sock.getsockname()[0]
-    port = sock.getsockname()[1]
+def client_send(sock,tid):
+    if tid:
+        send_for_duration(sock,tid)
+
+    #ip = sock.getsockname()[0]
+    #port = sock.getsockname()[1]
+
     
-    if args.time:
+def send_for_duration(sock,duration):
         data = b'0'*1000
-        end = time.time() + args.time
+        start = time.time()
+        end = start + duration
         byte_send = 0
         while time.time() < end:
             sock.send(data)
             byte_send += 1000
+          
         sock.send("BYE".encode())
         print_result(sock,byte_send)
 
 
-    elif args.intervall and args.time: 
-        data_sendt = 0
-        total_data_sent = 0
-        data = b'0'*1000
-        end_time=time.time()+args.time
-        start_time = time.time()
-        intervall = args.intervall
-        intervall_sendt = 0
-        interval_start =  0
-        while time.time() <end_time:
-            sock.send(data)
-            data_sendt += len(data)
-            if time.time() > intervall + start_time:
-                total_data_sent += data_sendt
-                elapsed_time = time.time() - start_time
-                total_data_sent += data_sendt
-                interval_end = elapsed_time
-                bandwidth = (data_sendt/1000000*8) / args.intervall
-                print(intervall_sendt)
-                if(args.format =="B"):
-                    total_data = data_sendt
-                elif (args.format == "KB"):
-                    total_data = data_sendt/1000
-                else:
-                    total_data = data_sendt/1000000.0 
-                result= [[f"{ip}:{port}",f"{interval_start:.1f} - {interval_end:.1f}",f" {total_data:.0f} {args.format}",f"{ bandwidth:.2f}Mbps"]]
-                headers = ['ID', 'Interval','Transfer','Bandwith']
-                print(tabulate(result, headers=headers))
-                intervall+= args.intervall
-                interval_start = elapsed_time
-                data_sendt = 0
-        sock.send("BYE".encode())
-        print_result(sock,total_data_sent)
-        
-    
-    #num 
-    elif args.num:
-        data_sendt =0
-        bandwidth = 0
-        data =  b"0" * 1000 
-        data_to_send = args.num
-        start_time = time.time()
-        remaining_data = 0
-        for i in range(999, data_to_send,1000):
-            sock.send(data)
-            data_sendt += len(data)
-        remaining_data=data_to_send%1000
-        if remaining_data !=0:
-            sock.send(b'0'*remaining_data)
-            data_sendt +=len(remaining_data)
-        sock.send('BYE'.encode())
-        end_time = time.time()
-        duration = end_time - start_time
-        if duration == 0:
-            duration = 1
-        melding = sock.recv(1000).decode()
-        if ("ACK:BYE") in melding:
-            print_result(sock,data_sendt)
-    
 
 
 if args.server and args.client:
@@ -225,14 +171,15 @@ elif args.client:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                  sock.connect((args.server_ip,args.port))
-                 print('--------------------------------------------------------------------------------')
-                 print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
-                 print('--------------------------------------------------------------------------------')
+                 
             except:
                 print("Error: failed to connect to client")
                 sys.exit()
-            t2 = threading.Thread(target=send, args=(sock,))
+            t2 = threading.Thread(target=client_send, args=(sock,args.time))
             t2.start()
+            print('--------------------------------------------------------------------------------')
+            print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
+            print('--------------------------------------------------------------------------------')
     else:
         print("-P kan ikke være større enn 5")
         sys.exit()
