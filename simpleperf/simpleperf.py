@@ -131,13 +131,13 @@ def client_send(sock):
     if args.num:
         num(sock)
     
+    # If the user provided the "interval" argument, call the "send_at_intervals" function
+    elif args.intervall:
+         send_at_intervals(sock)
     # If the user provided the "time" argument, call the "send_for_duration" function
-    elif args.time:
+    else:
          send_for_duration(sock)
     
-    # If the user provided the "interval" argument, call the "send_at_intervals" function
-    elif args.interval:
-         send_at_intervals(sock)
 
 
 #This function sends data over a socket for a specified duration of time. 
