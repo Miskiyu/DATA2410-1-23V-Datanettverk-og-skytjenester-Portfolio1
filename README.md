@@ -8,21 +8,21 @@ Dependecies you need to download before using Simpleperf
 - pip 
 - tabulate, you can download with pip install tabulate
 
-choose the mode of operation
+# Choose the mode of operation
 
--Server mode:
-    - if you want to mesaure the network perfrmance of server start Simpleperf in server mode by running:
-    python -s 
+# Server mode:
+- if you want to mesaure the network perfrmance of server start Simpleperf in server mode by running:
+    - python -s 
 port and ip has default if you dont want to write ip and port
 
-    -server has three other options:
-        - -f (format)
-        - -p (port)
-        - -b (ip)
+-  server has three other options:
+    -  -f (format)
+    - -p (port)
+    - -b (ip)
 
-Client 
-    - if you want to mesaure the network performance between client adn server, start Simpleperf in client mode by running:
-        - simpleperf -c
+# Client 
+- if you want to mesaure the network performance between client adn server, start Simpleperf in client mode by running:
+    -  simpleperf -c
     
     client have 5 options
     - 
