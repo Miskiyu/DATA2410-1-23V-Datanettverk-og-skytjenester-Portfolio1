@@ -128,7 +128,7 @@ This function takes a socket as input, and based on the user-provided arguments,
 def client_send(sock):
     #ip = sock.getsockname()[0]
     #port = sock.getsockname()[1]
-    print('A simpleperf client is connecting to server',args.server_ip,',port',args.port) 
+    print('A simpleperf client is connecting with ',args.server_ip,',port',args.port) 
     
     # If the user provided the "num" argument, call the "num" function
     if args.num:
