@@ -1,11 +1,10 @@
-
-Simpleperf 
+# Simpleperf 
 
 Simpleperf is a simple program to test network performance between server and client. It can be used to mesaure the maximum bandwidht and how much data transferd between to host and  test the quality of network link. You can run simpleprf in to modues, client or server.
 
-How to use Simpleperf
+# How to use Simpleperf
 
-dependecies you need to download before using Simpleperf
+Dependecies you need to download before using Simpleperf
 - pip 
 - tabulate, you can download with pip install tabulate
 
