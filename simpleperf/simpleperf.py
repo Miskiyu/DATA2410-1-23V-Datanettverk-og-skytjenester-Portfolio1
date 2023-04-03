@@ -126,6 +126,9 @@ This function takes a socket as input, and based on the user-provided arguments,
  The three possible functions that can be called are num, send_for_duration, and send_at_intervals
 """
 def client_send(sock):
+    ip = sock.getsockname()[0]
+    port = sock.getsockname()[1]
+    print('A simpleperf client is connecting to server',ip,',port',args.port) 
     
     # If the user provided the "num" argument, call the "num" function
     if args.num:
@@ -278,6 +281,9 @@ elif args.client:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                  sock.connect((args.server_ip,args.port))
+                 print('--------------------------------------------------------------------------------')
+                 print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER',args.server_ip,',PORT',args.port) 
+                 print('--------------------------------------------------------------------------------')
                  
             except:
                 print("Error: failed to connect to client")
@@ -286,9 +292,7 @@ elif args.client:
             t2 = threading.Thread(target=client_send, args=(sock,))
             t2.start()
             # Print a message indicating that a client is connecting to the server
-            print('--------------------------------------------------------------------------------')
-            print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER IP',args.server_ip,'PORT',args.port) 
-            print('--------------------------------------------------------------------------------')
+           
     else:
         # If the value of '-P' argument is not between 1 and 5, print an error message and exit
         print("-P kan ikke være større enn 5")
