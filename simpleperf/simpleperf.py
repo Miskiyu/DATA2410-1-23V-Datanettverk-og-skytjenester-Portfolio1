@@ -45,20 +45,6 @@ def formater_num(val):
     return a         #if the input is B then the value of a returns
 
 
-#Fuction that takes in sock, and how much data send, and prints result
-def print_result(sock,byte_send):
-   melding = sock.recv(1000).decode()
-   if "ACK:BYE" in melding:
-        bandwith = (byte_send/1000000*8)/(args.time)
-        if(args.format =="B"):
-         total_data = byte_send
-        elif (args.format == "KB"):
-         total_data = byte_send/1000
-        else:
-         total_data = byte_send/1000000.0 
-        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-        print(tabulate(result, headers=headers))
                 
 #Defines and parses command line arguments using the argparse library in Python. 
 parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
@@ -165,7 +151,7 @@ def send_for_duration(sock):
     while time.time() < end:    # Loop until the current time is greater than the end time
         sock.send(data)    # Send the data over the socket
         byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
-    
+      
     sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
     print_result(sock, byte_send)    #  Print the result of the transmission
 
@@ -258,7 +244,20 @@ def num(sock):
     print(tabulate(result, headers=headers))
 
 
-
+#Fuction that takes in sock, and how much data send, and prints result
+def print_result(sock,byte_send):
+   melding = sock.recv(1000).decode()
+   if "ACK:BYE" in melding:
+        bandwith = (byte_send/1000000*8)/(args.time)
+        if(args.format =="B"):
+         total_data = byte_send
+        elif (args.format == "KB"):
+         total_data = byte_send/1000
+        else:
+         total_data = byte_send/1000000.0 
+        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+        print(tabulate(result, headers=headers))
 
 
 
