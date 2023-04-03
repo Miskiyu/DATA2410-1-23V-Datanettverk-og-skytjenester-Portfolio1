@@ -126,9 +126,9 @@ This function takes a socket as input, and based on the user-provided arguments,
  The three possible functions that can be called are num, send_for_duration, and send_at_intervals
 """
 def client_send(sock):
-    ip = sock.getsockname()[0]
-    port = sock.getsockname()[1]
-    print('A simpleperf client is connecting to server',ip,',port',args.port) 
+    #ip = sock.getsockname()[0]
+    #port = sock.getsockname()[1]
+    print('A simpleperf client is connecting to server',args.server_ip,',port',args.port) 
     
     # If the user provided the "num" argument, call the "num" function
     if args.num:
