@@ -165,7 +165,7 @@ def send_at_intervals(sock):
     end_time = time.time() + args.time
     start_time = time.time()
     # Set the interval for sending data
-    interval = args.interval
+    interval = args.intervall
     interval_start = 0
     # Keep sending data until the end time is reached
     while time.time() < end_time:
@@ -178,7 +178,7 @@ def send_at_intervals(sock):
             total_data_sent += data_sent
             elapsed_time = time.time() - start_time
             interval_end = elapsed_time
-            bandwidth = (data_sent / 1000000 * 8) / args.interval
+            bandwidth = (data_sent / 1000000 * 8) / args.intervall
             if args.format == "B":
                 total_data = data_sent
             elif args.format == "KB":
@@ -189,7 +189,7 @@ def send_at_intervals(sock):
             headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
             print(tabulate(result, headers=headers))
             # Update the interval start and reset the data sent
-            interval += args.interval
+            interval += args.intervall
             interval_start = elapsed_time
             data_sent = 0
     # Send a final message to the server indicating that the client is done
