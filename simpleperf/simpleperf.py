@@ -261,6 +261,7 @@ def print_result(sock,byte_send):
         result = [[f"{args.server_ip}:{clientPort}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
         print(tabulate(result, headers=headers))
+        #sock.close
 
 
 
