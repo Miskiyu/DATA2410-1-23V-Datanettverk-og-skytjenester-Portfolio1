@@ -145,13 +145,12 @@ def client_send(sock):
 
 #This function sends data over a socket for a specified duration of time. 
 def send_for_duration(sock):
-   
     data = b'0'*1000  # Set the data to be sent as 1000 bytes of 0 
     start = time.time()      # Get the start time of the function
-    end = start + args.time  # Set the end time to be the start time plus the duration specified in the arguments 
+    end_time = start + args.time  # Set the end time to be the start time plus the duration specified in the arguments 
     byte_send = 0    # Initialize a variable to keep track of the total number of bytes sent
 
-    while time.time() < end:    # Loop until the current time is greater than the end time
+    while time.time() < end_time:    # Loop until the current time is greater than the end time
         sock.send(data)    # Send the data over the socket
         byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
       
