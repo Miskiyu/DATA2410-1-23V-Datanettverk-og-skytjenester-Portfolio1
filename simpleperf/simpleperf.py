@@ -249,6 +249,7 @@ def num(sock):
 
 #Fuction that takes in sock, and how much data send, and prints result
 def print_result(sock,byte_send):
+   clientPort=sock.getsockname()[1]
    melding = sock.recv(1000).decode()
    if "ACK:BYE" in melding:
         bandwith = (byte_send/1000000*8)/(args.time)
@@ -258,7 +259,7 @@ def print_result(sock,byte_send):
          total_data = byte_send/1000
         else:
          total_data = byte_send/1000000.0 
-        result = [[f"{args.server_ip}:{args.port}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        result = [[f"{args.server_ip}:{clientPort}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
         print(tabulate(result, headers=headers))
 
