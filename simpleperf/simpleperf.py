@@ -97,7 +97,7 @@ def handle_client(connection,addr):#A client handler function, this function get
     transfer_rate = 0 # Set transfer_rate to 0 initially
     total_data=0
     while True:
-        data = connection.recv(1024).decode() 
+        data = connection.recv(1000).decode() 
         data_lengt += len(data)
         if "BYE" in data: 
             connection.send("ACK:BYE".encode())
