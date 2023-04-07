@@ -2,35 +2,39 @@
 DATA 2410EKSAMEN: 
 """
 
+
+#Different module import used 
 import socket
 import sys
 import threading #importing needed packets
 import argparse
 import re
 import time
+import ipaddress  # Import the 'ipaddress' module
 from tabulate import tabulate
 
 
+#Functions to check input values
 
-"""Her lager jeg en funksjon som sjekker om porten er valid"""
+#Here I create a function that checks whether the port is valid
 def check_port(val):
     try:
         value = int(val)
-        if not (1024 <= value <= 65535):
-             print("Error: Port must be between 1024 and 65535")
+        if not (1024 <= value <= 65535): #if the port is not between 1024 and 65535
+             print("Error: Port must be between 1024 and 65535")  #print error message
              sys.exit()
-        return value
+        return value                     #if the port is valid return the value 
     except ValueError:
         raise argparse.ArgumentTypeError("Expected an integer but you entred a string")
 
-#This function takes in a single argument val. The purpose of the function is to check wheter the value provieded is a valid IP address 
-def check_ip(val):
-    ip = re.match("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$",val)#function is using re to mathc the input val, withc a pattern that defines the format of an IP address
-    if(ip):  #if ip is valid return ip
-        return val
-    else:#if the string does not match the patter, the code prinst an error message andexit the progamr 
-        print("This is not valid ip-adress")
-        sys.exit()  
+#This function takes in a single argument ip. The purpose of the function is to check wheter the value provieded is a valid IP address 
+def check_ip(ip):
+    try:
+        val= ipaddress.ip_address(ip)
+    except ValueError:
+        print(f'The IP address is not valid') #print a message indicating that the IP address is not valid
+    else:
+        return ip
 
 
 #A function that takes a string as input and formats it to a number in bytes
