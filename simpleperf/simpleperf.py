@@ -152,96 +152,72 @@ def client_send(sock, serverip,port):
     data = b'0'*1000 # Set the data to be sent as 1000 bytes of 0  
     byte_send = 0    # Initialize a variable to keep track of the total number of bytes sent
     start = time.time() # Get the start time of the function
+        
+    if args.num:
+        size = args.num   # sets a variable 'size' to the value of args.num, which is passed as an argument to the function and specifies the total number of bytes to send
+         
+         # Send data in chunks of 1000 bytes until size is reached
+        for i in range(999, size, 1000):   # loops from 999 to size (excluding size) in steps of 1000 bytes
+            sock.send(data)   # sends a chunk of 1000 bytes to the connected socket
+            byte_send += 1000   # adds 1000 to the total number of bytes sent
 
+    # Send remaining data
+        remaining_data = size % 1000   # calculates the remaining data after sending all 1000-byte chunks
+        if remaining_data != 0:   # if there is remaining data
+            sock.send(b'0' * remaining_data)   # sends the remaining data (less than 1000 bytes)
+            byte_send += remaining_data   # adds the number of remaining bytes to the total number of bytes sent
+   
+   
     # If the user provided the "time" argument
-    if args.time:
+    elif args.time:
         end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
         while time.time() < end_time:    # Loop until the current time is greater than the end time
             sock.send(data)    # Send the data over the socket
-            byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
-        
+            byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
+   
+    
+    elif args.interval:
+         data_sent = 0
+         byte_send = 0
+         data = b'0'*1000
+             # Calculate the end time for sending data
+         end_time = time.time() + args.time
+         start_time = time.time()
+        # Set the interval for sending data
+         interval = args.intervall
+         interval_start = 0
+         # Keep sending data until the end time is reached
+         while time.time() < end_time:
+            # Send data
+             sock.send(data)
+             data_sent += len(data)
+             # Check if an interval has passed
+             if time.time() > interval + start_time:
+                 # Calculate and print the results for the interval
+                 byte_send += data_sent
+                 elapsed_time = time.time() - start_time
+                 interval_end = elapsed_time
+                 bandwidth = (data_sent / 1000000 * 8) / args.intervall
+                 if args.format == "B":
+                    total_data = data_sent
+                 elif args.format == "KB":
+                     total_data = data_sent / 1000
+                 else:
+                    total_data = data_sent / 1000000.0 
+                 result = [[f"{args.serverip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps\n"]]
+                 headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
+                 print(tabulate(result, headers=headers))
+                 # Update the interval start and reset the data sent
+                 interval += args.intervall
+                 interval_start = elapsed_time
+                 data_sent = 0
+    end_time = time.time()   # records the end time of the data transfer
+    duration = end_time - start  # calculates the duration of the data transfer
     sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
-    print_result('C',addr,  args.time,byte_send)  #  Print the result of the transmission
+    print_result('C',addr,  duration,byte_send)  #  Print the result of the transmission
     sock.close()
 
-      
-  
-def send_at_intervals(sock,addr):
-    # Initialize variables to keep track of data sent and to send
-    data_sent = 0
-    total_data_sent = 0
-    data = b'0'*1000
-    # Calculate the end time for sending data
-    end_time = time.time() + args.time
-    start_time = time.time()
-    # Set the interval for sending data
-    interval = args.intervall
-    interval_start = 0
-    # Keep sending data until the end time is reached
-    while time.time() < end_time:
-        # Send data
-        sock.send(data)
-        data_sent += len(data)
-        # Check if an interval has passed
-        if time.time() > interval + start_time:
-            # Calculate and print the results for the interval
-            total_data_sent += data_sent
-            elapsed_time = time.time() - start_time
-            interval_end = elapsed_time
-            bandwidth = (data_sent / 1000000 * 8) / args.intervall
-            if args.format == "B":
-                total_data = data_sent
-            elif args.format == "KB":
-                total_data = data_sent / 1000
-            else:
-                total_data = data_sent / 1000000.0 
-            result = [[f"{args.serverip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps\n"]]
-            headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
-            print(tabulate(result, headers=headers))
-            # Update the interval start and reset the data sent
-            interval += args.intervall
-            interval_start = elapsed_time
-            data_sent = 0
-    # Send a final message to the server indicating that the client is done
-    sock.send("BYE".encode())
-    # Print the total results for all intervals
-    print_result('C',addr,elapsed_time, total_data_sent)
-
-
-
-#This function sends a specified number of bytes (args.num) over a socket connection (sock).
-#  It sends data in chunks of 1000 bytes until the specified size is reached. 
-# If there is any remaining data, it sends that as well. 
-# Then it sends a "BYE" to signal the end of the data transfer.
-
-def number_of_bytes(sock, addr):
-    # Initialize variables
-    sent_bytes = 0   # sets a variable to 0 that will be used to track the total number of bytes sent
-    data = b"0" * 1000  # creates a byte object of 1000 bytes that will be sent in chunks
-    size = args.num   # sets a variable 'size' to the value of args.num, which is passed as an argument to the function and specifies the total number of bytes to send
-    start_time = time.time()   # records the start time of the data transfer
-
-    # Send data in chunks of 1000 bytes until size is reached
-    for i in range(999, size, 1000):   # loops from 999 to size (excluding size) in steps of 1000 bytes
-        sock.send(data)   # sends a chunk of 1000 bytes to the connected socket
-        sent_bytes += 1000   # adds 1000 to the total number of bytes sent
-
-    # Send remaining data
-    remaining_data = size % 1000   # calculates the remaining data after sending all 1000-byte chunks
-    if remaining_data != 0:   # if there is remaining data
-        sock.send(b'0' * remaining_data)   # sends the remaining data (less than 1000 bytes)
-        sent_bytes += remaining_data   # adds the number of remaining bytes to the total number of bytes sent
-
-    # Send BYE command
-    sock.send('BYE'.encode())   # sends a 'BYE' command to signal the end of the data transfer
-
-    # Calculate duration and bandwidth
-    end_time = time.time()   # records the end time of the data transfer
-    duration = end_time - start_time   # calculates the duration of the data transfer
-    if duration == 0:   # check the case where the time is 0 by setting it to 1
-        duration = 1
-    print_result('C', addr, duration, sent_bytes)   # calls a function to print the results of the data transfer
-
+    
 
 
 
