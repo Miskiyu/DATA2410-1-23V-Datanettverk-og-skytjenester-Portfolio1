@@ -5,36 +5,36 @@ Simpleperf is a simple program to test network performance between server and cl
 
 # Dependencies 
 
-- this program uses Tabulate as depenedency, you have to first download pip to use pip. 
+- Simpleperf uses the Tabulate library as a dependency. To use it, you need to have pip installed. To install Tabulate, run the following command:
     - sudo apt-get install pip
     - python -m pip install -U tabulate  
 
 
 # How to use Simpleperf
-simpleperf runs in server mode and client mode. Each mode has different flags you can invoke. 
+Simpleperf can be run in either server mode or client mode. Each mode has different flags that can be used. 
 
 # Server mode:
 - if you want to mesaure the network perfrmance of server start Simpleperf in server mode by running:
     - python simplpeperf.py  -s 
 
-port and ip has default if you dont want to write ip and port
+If you don't specify an IP address and port number, Simpleperf will use default values.
 
--  server has three other options:
-    - -f (format)
-    - -p (port)
-    - -b (ip)
+The server has three other options:
+
+ - f (format): specifies the format for the output (B for bytes, KB for kilobytes, or MB for megabytes)
+ - p (port): specifies the port number to use
+ - b (IP): specifies the IP address to bind to
 
 # Client 
 - if you want to mesaure the network performance between client adn server, start Simpleperf in client mode by running:
     - python simpleperf.py -c
-    
-    client have 5 options
-    - -f (format)
-    - -i (intervall)
-    - -t (time)
-    - -n (num)
-    - -p (parallel )
+The client has five options:
 
+- f (format): specifies the format for the output (B for bytes, KB for kilobytes, or MB for megabytes)
+- i (interval): specifies the time interval (in seconds) between data transmissions
+- t (time): specifies the total time (in seconds) to run the test
+- n (num): specifies the number of data transmissions to perform
+- p (parallel): specifies the number of parallel connections to use
 
 
 
