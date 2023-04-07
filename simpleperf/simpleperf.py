@@ -64,7 +64,7 @@ parser.add_argument('-c','--client', action='store_true', help='enable the clien
 parser.add_argument("-I", "--serverip", type=check_ip, default='127.0.0.1' ,help="server IP address for client mode (default: 127.0.0.1)")
 
 parser.add_argument("-t", "--time", type=int, help="Duration in seconds, Must be > 0. Default: 25 sec", default=25)
-parser.add_argument('-i', "--intervall", type=int,
+parser.add_argument('-i', "--interval", type=int,
                         help='Interval for statistics output in seconds')
 parser.add_argument('-P', '--parallel', default=1, type=int, choices=range(1,6), help='The number of parallel connections to establish with the server (default: 1)')
 parser.add_argument('-n','--num',  type=formater_num, help='transfer number of bytes, it shoud be either in B,KB or MB')
@@ -72,28 +72,29 @@ args = parser.parse_args()
 
 
 #Fuction that takes in sock,elapsed_time and how much data send, and prints result
-def print_result(mode, addr, elapsed_time,byte_send):
-   port = addr [1]
-   ip=addr[0]
- 
-   bandwith = (byte_send/1000000*8)/(elapsed_time) #This line calculates the bandwidth/rate in Mbps
-   if(args.format =="B"):
-         total_data = byte_send
-   elif (args.format == "KB"):
-         total_data = byte_send/1000
-   else:
-         total_data = byte_send/1000000.0 
+def print_result(mode, addr, elapsed_time, byte_send, interval=False, relative_interval_start=None):
+    bandwidth = (byte_send / 1000000 * 8) / elapsed_time  # This line calculates the bandwidth/rate in Mbps
+    if args.format == "B":
+        total_data = byte_send
+    elif args.format == "KB":
+        total_data = byte_send / 1000
+    else:
+        total_data = byte_send / 1000000.0
 
-   if mode == "C":
+    if mode == "C":
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-   elif mode == "S":
-        headers=  ["ID", "Interval", "Recieved", "Rate"]
-    
-   result = [[f"{ip}:{port}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-       
-   print(tabulate(result, headers=headers))
-   print(" ")
+    elif mode == "S":
+        headers = ["ID", "Interval", "Recieved", "Rate"]
 
+    if interval:
+        interval_print = f"{round(relative_interval_start, 1)} - {round(relative_interval_start + elapsed_time, 1)}"
+
+        result = [[f"{addr[1]}:{addr[0]}", interval_print, f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+    else:
+        result = [[f"{addr[1]}:{addr[0]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+
+    print(tabulate(result, headers=headers))
+    print(" ")
 
 
 
@@ -169,22 +170,20 @@ def client_send(sock, serverip,port):
    
    
     # If the user provided the "time" argument
-    elif args.time:
-        end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
-        while time.time() < end_time:    # Loop until the current time is greater than the end time
-            sock.send(data)    # Send the data over the socket
-            byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
+    #elif args.time:
+    #    end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
+    #    while time.time() < end_time:    # Loop until the current time is greater than the end time
+     #       sock.send(data)    # Send the data over the socket
+    #        byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
    
     
     elif args.interval:
          data_sent = 0
-         byte_send = 0
-         data = b'0'*1000
              # Calculate the end time for sending data
          end_time = time.time() + args.time
-         start_time = time.time()
+         start_time=time.time()
         # Set the interval for sending data
-         interval = args.intervall
+         interval = args.interval
          interval_start = 0
          # Keep sending data until the end time is reached
          while time.time() < end_time:
@@ -197,7 +196,7 @@ def client_send(sock, serverip,port):
                  byte_send += data_sent
                  elapsed_time = time.time() - start_time
                  interval_end = elapsed_time
-                 bandwidth = (data_sent / 1000000 * 8) / args.intervall
+                 bandwidth = (data_sent / 1000000 * 8) / args.interval
                  if args.format == "B":
                     total_data = data_sent
                  elif args.format == "KB":
@@ -208,7 +207,7 @@ def client_send(sock, serverip,port):
                  headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
                  print(tabulate(result, headers=headers))
                  # Update the interval start and reset the data sent
-                 interval += args.intervall
+                 interval += args.interval
                  interval_start = elapsed_time
                  data_sent = 0
     end_time = time.time()   # records the end time of the data transfer
