@@ -170,11 +170,11 @@ def client_send(sock, serverip,port):
    
    
     # If the user provided the "time" argument
-    #elif args.time:
-    #    end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
-    #    while time.time() < end_time:    # Loop until the current time is greater than the end time
-     #       sock.send(data)    # Send the data over the socket
-    #        byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
+    elif args.time:
+       end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
+       while time.time() < end_time:    # Loop until the current time is greater than the end time
+           sock.send(data)    # Send the data over the socket
+           byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
    
     
     elif args.interval:
