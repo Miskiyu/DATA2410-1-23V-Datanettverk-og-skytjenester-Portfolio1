@@ -147,25 +147,36 @@ def client_send(sock, serverip,port):
 
     clientip = sock.getsockname()[0]
     clientport = sock.getsockname()[1]
-    addr= (clientip,clientport)
+    clientAddr =(clientip,clientport)
+   
+    # If the user provided the "num" argument, call the "number_of_bytess" function
+    if args.num:
+        number_of_bytes(sock,clientAddr)
+    
+    # If the user provided the "interval" argument, call the "send_at_intervals" function
+    elif args.intervall:
+         send_at_intervals(sock,clientAddr)
+    # If the user provided the "time" argument, call the "send_for_duration" function
+    else:
+         send_for_duration(sock,clientAddr)
 
-    data = b'0'*1000 # Set the data to be sent as 1000 bytes of 0  
+
+#This function sends data over a socket for a specified duration of time. 
+def send_for_duration(sock,addr):
+    data = b'0'*1000  # Set the data to be sent as 1000 bytes of 0 
+    start = time.time()      # Get the start time of the function
+    end_time = start + args.time  # Set the end time to be the start time plus the duration specified in the arguments 
     byte_send = 0    # Initialize a variable to keep track of the total number of bytes sent
-    start = time.time() # Get the start time of the function
 
-    # If the user provided the "time" argument
-    if args.time:
-        end_time= start + int(args.time)  # Set the end time to be the start time plus the duration specified in the arguments 
-        while time.time() < end_time:    # Loop until the current time is greater than the end time
-            sock.send(data)    # Send the data over the socket
-            byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
-        
+    while time.time() < end_time:    # Loop until the current time is greater than the end time
+        sock.send(data)    # Send the data over the socket
+        byte_send +=len(data)         # Add the number of bytes sent to the total number of bytes sent  
+      
     sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
     print_result('C',addr,  args.time,byte_send)  #  Print the result of the transmission
     sock.close()
 
-      
-  
+
 def send_at_intervals(sock,addr):
     # Initialize variables to keep track of data sent and to send
     data_sent = 0
