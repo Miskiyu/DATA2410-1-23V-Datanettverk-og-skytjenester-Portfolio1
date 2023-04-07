@@ -172,12 +172,13 @@ def client_send(sock, serverip,port):
            sock.send(data)    # Send the data over the socket
            byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
    
-    
+
     elif args.interval and args.time:
          data_sent = 0
              # Calculate the end time for sending data
          end_time = time.time() + args.time
          start_time=time.time()
+         headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
         # Set the interval for sending data
          interval = args.interval
          interval_start = 0
@@ -200,7 +201,6 @@ def client_send(sock, serverip,port):
                  else:
                     total_data = data_sent / 1000000.0 
                  result = [[f"{clientip}:{clientport}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps\n"]]
-                 headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
                  print(tabulate(result, headers=headers))
                  # Update the interval start and reset the data sent
                  interval += args.interval
