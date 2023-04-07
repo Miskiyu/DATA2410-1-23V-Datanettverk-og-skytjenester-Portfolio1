@@ -86,12 +86,8 @@ def print_result(mode, addr, elapsed_time, byte_send, interval=False, relative_i
     elif mode == "S":
         headers = ["ID", "Interval", "Recieved", "Rate"]
 
-    if interval:
-        interval_print = f"{round(relative_interval_start, 1)} - {round(relative_interval_start + elapsed_time, 1)}"
-
-        result = [[f"{addr[1]}:{addr[0]}", interval_print, f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
-    else:
-        result = [[f"{addr[1]}:{addr[0]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+    
+    result = [[f"{addr[0]}:{addr[1]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
 
     print(tabulate(result, headers=headers))
     print(" ")
@@ -203,7 +199,7 @@ def client_send(sock, serverip,port):
                      total_data = data_sent / 1000
                  else:
                     total_data = data_sent / 1000000.0 
-                 result = [[f"{args.serverip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps\n"]]
+                 result = [[f"{clientip}:{clientport}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps\n"]]
                  headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
                  print(tabulate(result, headers=headers))
                  # Update the interval start and reset the data sent
