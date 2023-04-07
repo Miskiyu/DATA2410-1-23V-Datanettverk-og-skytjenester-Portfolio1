@@ -87,7 +87,7 @@ def print_result(mode, addr, elapsed_time, byte_send, interval=False, relative_i
         headers = ["ID", "Interval", "Recieved", "Rate"]
 
     
-    result = [[f"{addr[0]}:{addr[1]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+    result = [[f"{args.serverip}:{addr[1]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
 
     print(tabulate(result, headers=headers))
     print(" ")
