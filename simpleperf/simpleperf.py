@@ -30,41 +30,61 @@ def check_port(val):
 #This function takes in a single argument ip. The purpose of the function is to check wheter the value provieded is a valid IP address 
 def check_ip(ip):
     try:
-        val= ipaddress.ip_address(ip)
-    except ValueError:
+        val= ipaddress.ip_address(ip) # use the ipaddress module to create an ip_address object with the given IP address
+    except ValueError:  # If a ValueError is raised (the IP address is not valid)
         print(f'The IP address is not valid') #print a message indicating that the IP address is not valid
-    else:
-        return ip
+    else: #If no exception is raised (the IP address is valid)
+        return ip   #Return the ip address
 
 
 #A function that takes a string as input and formats it to a number in bytes
 def formater_num(val):
-    if not re.match(r"\d+(B|KB|MB)",val):  #checks if the input matches B,KB or MB
-        raise Exception("Formate av bytes du kan sende er et tall og enten B,KB eller MB") #if it does not mathc errror message is printed
-    a = int(re.findall(r"\d+",val)[0]) # the function extracts the numerical value from the string using re.findall(). [0] is used to extract the first match since there could be multiple matches.
-    if re.findall(r'(KB)',val): #If it is KB then the value is multiplied bye 1000
-        return a*1000
-    elif re.findall(f'(MB)',val): #it it is MB then the value is multiplied bt 1000000
-        return 1000000*a
-    return a         #if the input is B then the value of a returns
+    val = val.upper() # convert the input string to uppercase
+    if not re.match(r"\d+(B|KB|MB)", val): # check if the input matches B, KB or MB in uppercase
+        raise Exception("The format of bytes that can be sent is a number followed by either B, KB, or MB.") # if it does not match, an error message is printed
+    a = int(re.findall(r"\d+", val)[0]) # extract the numerical value from the string using re.findall(). [0] is used to extract the first match since there could be multiple matches.
+    if re.findall(r'(KB)', val): # if it is KB, then the value is multiplied by 1000
+        return a * 1000
+    elif re.findall(r'(MB)', val): # if it is MB, then the value is multiplied by 1000000
+        return 1000000 * a
+    return a         # if the input is B, then the value of a is returned
 
 
-                
+#Fuction that takes in sock, and how much data send, and prints result
+def print_result(sock,byte_send):
+   clientPort=sock.getsockname()[1]
+   melding = sock.recv(1000).decode()
+   if "ACK:BYE" in melding:
+        bandwith = (byte_send/1000000*8)/(args.time)
+        if(args.format =="B"):
+         total_data = byte_send
+        elif (args.format == "KB"):
+         total_data = byte_send/1000
+        else:
+         total_data = byte_send/1000000.0 
+        result = [[f"{args.serverip}:{clientPort}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
+        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
+        print(tabulate(result, headers=headers))
+        #sock.close
+
+
+
+
 #Defines and parses command line arguments using the argparse library in Python. 
-parser = argparse.ArgumentParser(description="optional arguments", epilog="End of help")
+parser = argparse.ArgumentParser(description="Simpleperf is a simple program for measuring netwrok thrugput.", epilog="End of help")
 
-parser.add_argument('-s','--server', action='store_true')
+parser.add_argument('-s','--server', action='store_true', help='enble the server mode')
 parser.add_argument('-p','--port', type=check_port, default=8088)
-parser.add_argument('-b', '--bind', default=socket.gethostbyname(socket.gethostname()) , type=check_ip, help='The IP address to bind to (default: localhost)')
+parser.add_argument('-b', '--bind', default='127.0.0.1' , type=check_ip, help='The IP address to bind to (default: 127.0.0.1)')
 parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
-parser.add_argument('-c','--client', action='store_true')
-parser.add_argument("-I", "--server_ip", type=check_ip, default=socket.gethostbyname(socket.gethostname()) ,help="server IP address for client mode",)
-parser.add_argument("-t", "--time", type=int, help="Duration in seconds", default=25)
+parser.add_argument('-c','--client', action='store_true', help='enable the client mode')
+parser.add_argument("-I", "--serverip", type=check_ip, default='127.0.0.1' ,help="server IP address for client mode (default: 127.0.0.1)")
 
+parser.add_argument("-t", "--time", type=int, help="Duration in seconds, Must be > 0. Default: 25 sec", default=25)
 parser.add_argument('-i', "--intervall", type=int,
                         help='Interval for statistics output in seconds')
-parser.add_argument('-P', '--parallel', default=1, type=int, help='The number of parallel connections to establish with the server (default: 1)')
-parser.add_argument('-n','--num',  type=formater_num)
+parser.add_argument('-P', '--parallel', default=1, type=int, choices=range(1,6), help='The number of parallel connections to establish with the server (default: 1)')
+parser.add_argument('-n','--num',  type=formater_num, help='transfer number of bytes, it shoud be either in B,KB or MB')
 args = parser.parse_args()
 
 
@@ -78,19 +98,19 @@ args = parser.parse_args()
 # The function also prints out a message indicating that the server is listening on the specified port.
 def server(host, port): #main method
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind((host,port))	
-    except:
-        print("Feil til å koble seg på")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # creates a new socket object
+        sock.bind((host,port))	# binds the socket to the specified ip and port
+    except:  # if an error occurs while binding the socket, print an error message and exit the program 
+        print("Failed to connect")
         sys.exit()
 	
     print('------------------------------------------------')
     print ('A SIMPLEPERF SERVER IS LISTENING ON PORT',port) #Printing this message on the server
     print('-------------------------------------------------')
-    sock.listen()
+    sock.listen() # listen for incoming connections
     while True: #always true, this will always loop, and wait for new cleints to connect
         connectionSocket, addr = sock.accept() #Accepting a new connection
-        print(f"A simpleperf client with IP {addr[0]}:{str(addr[1])} is connected with {args.bind}:{args.port}")
+        print(f"A simpleperf client with IP {addr[0]}:{str(addr[1])} is connected with {host}:{port} \n")
         thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
         thread.start()
 
@@ -100,13 +120,13 @@ def handle_client(connection,addr):#A client handler function, this function get
     start_time = time.time() # Start time for data transfer
     transfer_rate = 0 # Set transfer_rate to 0 initially
     total_data=0
-    while True:
-        data = connection.recv(1000).decode() 
-        data_lengt += len(data)
-        if "BYE" in data: 
+    while True: # Loop forever until a break statement is encountered
+        data = connection.recv(1000).decode()  # Receive data from the client and decode it 
+        data_lengt += len(data)  # Update the total length of data received from the client
+        if "BYE" in data:   # If the client sends a "BYE" message, send an acknowledgement and break out of the loop
             connection.send("ACK:BYE".encode())
             break 
-    end_time = time.time()
+    end_time = time.time()   # Record the end time 
     if(args.format =="B"):
         total_data = data_lengt
     elif (args.format == "KB"):
@@ -114,7 +134,7 @@ def handle_client(connection,addr):#A client handler function, this function get
     elif (args.format == "MB"):
         total_data = data_lengt/1000000
    
-    duration = end_time-start_time
+    duration = end_time-start_time  #sets how long the data was sent 
     transfer_rate =(data_lengt / duration) * 8 / 1000000# Update transfer_rate on each iteration of the loop
   
     #Creates a table to display the results
@@ -129,10 +149,12 @@ This function takes a socket as input, and based on the user-provided arguments,
  calls the appropriate function to send data over the socket.
  The three possible functions that can be called are num, send_for_duration, and send_at_intervals
 """
-def client_send(sock):
-    #ip = sock.getsockname()[0]
-    #port = sock.getsockname()[1]
-    print('A simpleperf client is connecting with ',args.server_ip,',port',args.port) 
+def client_send(sock, serverip,port):
+    server_addr = (serverip, port)
+    clientip = sock.getsockname()[0]
+    clientport = sock.getsockname()[1]
+    clientAddr =(clientip,clientport)
+    print('A simpleperf client is connecting with {serverip},port {port}\n') 
     
     # If the user provided the "num" argument, call the "num" function
     if args.num:
@@ -191,7 +213,7 @@ def send_at_intervals(sock):
                 total_data = data_sent / 1000
             else:
                 total_data = data_sent / 1000000.0 
-            result = [[f"{args.server_ip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps"]]
+            result = [[f"{args.serverip}:{args.port}", f"{interval_start:.1f} - {interval_end:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f}Mbps"]]
             headers = ['ID', 'Interval', 'Transfer', 'Bandwidth']
             print(tabulate(result, headers=headers))
             # Update the interval start and reset the data sent
@@ -245,63 +267,43 @@ def num(sock):
         total_data = sent_bytes / 1000
     else:
         total_data = sent_bytes / 1000000.0
-    result = [[f"{args.server_ip}:{args.port}", f"0.0-{duration:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
+    result = [[f"{args.serverip}:{args.port}", f"0.0-{duration:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
     headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
     print(tabulate(result, headers=headers))
 
 
-#Fuction that takes in sock, and how much data send, and prints result
-def print_result(sock,byte_send):
-   clientPort=sock.getsockname()[1]
-   melding = sock.recv(1000).decode()
-   if "ACK:BYE" in melding:
-        bandwith = (byte_send/1000000*8)/(args.time)
-        if(args.format =="B"):
-         total_data = byte_send
-        elif (args.format == "KB"):
-         total_data = byte_send/1000
-        else:
-         total_data = byte_send/1000000.0 
-        result = [[f"{args.server_ip}:{clientPort}", f"0.0-{args.time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwith:.2f} Mbps"]]
-        headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
-        print(tabulate(result, headers=headers))
-        #sock.close
 
 
+#Innvoking server or client mode 
 
 
-
-if args.server and args.client:
+if args.server and args.client: #gives error if both of client and client is envoked 
     print("Error: Cannot run both server and client mode")
     sys.exit()
 
+#if server is chosed sends port and ip to server function
 elif args.server:
     server(args.bind,args.port)
 
 elif args.client: 
-    # Check if the value of the '-P' argument is between 1 and 5 (inclusive)
-    if(args.parallel >0 and args.parallel <6):
-        # Create multiple client threads, each with its own socket
-        for i in range(0, int(args.parallel)):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                 sock.connect((args.server_ip,args.port))
-                 print('--------------------------------------------------------------------------------')
-                 print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER',args.server_ip,',PORT',args.port) 
-                 print('--------------------------------------------------------------------------------')
-                 
-            except:
-                print("Error: failed to connect to client")
-                sys.exit()
-            # Create a new thread for the current client, and start it
-            t2 = threading.Thread(target=client_send, args=(sock,))
-            t2.start()
+    # Create multiple client threads, each with its own socket
+    for i in range(0, int(args.parallel)):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates a new socket object
+        
+        try:
+            sock.connect((args.serverip,args.port)) #binds the socket to ip and port and prints a message
             # Print a message indicating that a client is connecting to the server
-           
-    else:
-        # If the value of '-P' argument is not between 1 and 5, print an error message and exit
-        print("-P kan ikke være større enn 5")
-        sys.exit()
+            print('--------------------------------------------------------------------------------')
+            print ('A SIMPLEPERF CLIENT IS CONNECTION TO SERVER',args.serverip,',PORT',args.port) 
+            print('--------------------------------------------------------------------------------')
+                 
+        except:#if failet to connect sends a error message 
+            print("Error: failed to connect to client")
+            sys.exit()
+        # Create a new thread for the current client, and start it
+        t2 = threading.Thread(target=client_send, args=(sock,args.serverip,args.port))
+        t2.start()
+  
 else:
     # If neither '-s' nor '-c' is specified, print an error message and exit
     print("Error: you must run either in server or client mode")
