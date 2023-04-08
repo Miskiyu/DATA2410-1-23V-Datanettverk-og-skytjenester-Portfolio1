@@ -14,7 +14,7 @@ import ipaddress  # Import the 'ipaddress' module
 from tabulate import tabulate
 
 
-#Functions to check input values
+#FUNCTIONS TO CHECK INPUT VALUES 
 
 #Here I create a function that checks whether the port is valid
 def check_port(val):
@@ -71,8 +71,8 @@ parser.add_argument('-n','--num',  type=formater_num, help='transfer number of b
 args = parser.parse_args()
 
 
-#Fuction that takes in sock,elapsed_time and how much data send, and prints result
-def print_result(mode, addr, elapsed_time, byte_send, interval=False, relative_interval_start=None):
+#Fuction that takes in mode,elapsed_time and how much data send, and prints result
+def print_result(mode, addr, elapsed_time, byte_send):
     bandwidth = (byte_send / 1000000 * 8) / elapsed_time  # This line calculates the bandwidth/rate in Mbps
     if args.format == "B":
         total_data = byte_send
@@ -210,7 +210,7 @@ def client_send(sock, serverip,port):
     duration = end_time - start  # calculates the duration of the data transfer
     sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
     print_result('C',addr,  duration,byte_send)  #  Print the result of the transmission
-    sock.close()
+    sock.close()       #close the connection 
 
     
 
