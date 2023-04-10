@@ -6,12 +6,14 @@ DATA 2410EKSAMEN:
 #Different module import used 
 import socket
 import sys
-import threading #importing needed packets
+import threading 
 import argparse
 import re
 import time
-import ipaddress  # Import the 'ipaddress' module
+import ipaddress 
 from tabulate import tabulate
+
+
 
 
 #FUNCTIONS TO CHECK INPUT VALUES 
@@ -26,6 +28,21 @@ def check_port(val):
         return value                     #if the port is valid return the value 
     except ValueError:
         raise argparse.ArgumentTypeError("Expected an integer but you entred a string")
+    
+# defining a function called check_val that takes one argument called val
+def check_val(val):  
+    try: 
+        num = int(val)   # converting the argument val to an integer 
+    except:  # if there is an exception while converting val to an integer
+        raise argparse.ArgumentTypeError("Not and integer, expected an integer")  # raise an error message
+    else:  # if there is no exception while converting val to an integer
+        if(num >=0):  # check if the value of num is greater than or equal to zero
+            return num  # if it is, return the value of num
+        else:  # if the value of num is less than zero
+            print("The number has to be positiv")  # print an error message 
+            sys.exit()
+
+
 
 #This function takes in a single argument ip. The purpose of the function is to check wheter the value provieded is a valid IP address 
 def check_ip(ip):
@@ -35,6 +52,7 @@ def check_ip(ip):
         print(f'The IP address is not valid') #print a message indicating that the IP address is not valid
     else: #If no exception is raised (the IP address is valid)
         return ip   #Return the ip address
+
 
 
 #A function that takes a string as input and formats it to a number in bytes
@@ -51,24 +69,6 @@ def formater_num(val):
 
 
 
-
-
-#Defines and parses command line arguments using the argparse library in Python. 
-parser = argparse.ArgumentParser(description="Simpleperf is a simple program for measuring netwrok thrugput.", epilog="End of help")
-
-parser.add_argument('-s','--server', action='store_true', help='enble the server mode')
-parser.add_argument('-p','--port', type=check_port, default=8088)
-parser.add_argument('-b', '--bind', default='127.0.0.1' , type=check_ip, help='The IP address to bind to (default: 127.0.0.1)')
-parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
-parser.add_argument('-c','--client', action='store_true', help='enable the client mode')
-parser.add_argument("-I", "--serverip", type=check_ip, default='127.0.0.1' ,help="server IP address for client mode (default: 127.0.0.1)")
-
-parser.add_argument("-t", "--time", type=int, help="Duration in seconds, Must be > 0. Default: 25 sec", default=25)
-parser.add_argument('-i', "--interval", type=int,
-                        help='Interval for statistics output in seconds')
-parser.add_argument('-P', '--parallel', default=1, type=int, choices=range(1,6), help='The number of parallel connections to establish with the server (default: 1)')
-parser.add_argument('-n','--num',  type=formater_num, help='transfer number of bytes, it shoud be either in B,KB or MB')
-args = parser.parse_args()
 
 
 #Fuction that takes in mode,elapsed_time and how much data send, and prints result
@@ -91,6 +91,32 @@ def print_result(mode, addr, elapsed_time, byte_send):
 
     print(tabulate(result, headers=headers))
     print(" ")
+
+
+
+
+
+
+
+#Defines and parses command line arguments using the argparse library in Python. 
+parser = argparse.ArgumentParser(description="Simpleperf is a simple program for measuring netwrok thrugput.", epilog="End of help")
+
+parser.add_argument('-s','--server', action='store_true', help='enble the server mode')
+parser.add_argument('-p','--port', type=check_port, default=8088)
+parser.add_argument('-b', '--bind', default='127.0.0.1' , type=check_ip, help='The IP address to bind to (default: 127.0.0.1)')
+parser.add_argument('-f', '--format', type=str, default="MB", choices=["B", "KB", "MB"], help='Format of the summary of results')
+parser.add_argument('-c','--client', action='store_true', help='enable the client mode')
+parser.add_argument("-I", "--serverip", type=check_ip, default='127.0.0.1' ,help="server IP address for client mode (default: 127.0.0.1)")
+
+parser.add_argument("-t", "--time", type=check_val, help="Duration in seconds, Must be > 0. Default: 25 sec", default=25)
+parser.add_argument('-i', "--interval", type=check_val,
+                        help='Interval for statistics output in seconds')
+parser.add_argument('-P', '--parallel', default=1, type=int, choices=range(1,6), help='The number of parallel connections to establish with the server (default: 1)')
+parser.add_argument('-n','--num',  type=formater_num, help='transfer number of bytes, it shoud be either in B,KB or MB')
+args = parser.parse_args()
+
+
+
 
 
 
@@ -118,6 +144,9 @@ def server(host, port): #main method
         thread.start()
 
 
+
+
+
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
     data_lengt=0
     start_time = time.time() # Start time for data transfer
@@ -136,9 +165,10 @@ def handle_client(connection,addr):#A client handler function, this function get
 
 
 
+
+
 #This function takes a socket, ip and port as input, based on the user-provided arguments,
- #calls the appropriate function to send data over the socket.
- #The three possible functions that can be called are number_of_bytes, send_for_duration, and send_at_intervals
+ #calls the appropriate if settning to send data over the socket.
 def client_send(sock, serverip,port):
     print(f'A simpleperf client is connecting with {serverip}, port {port} \n') 
 
@@ -149,7 +179,9 @@ def client_send(sock, serverip,port):
     data = b'0'*1000 # Set the data to be sent as 1000 bytes of 0  
     byte_send = 0    # Initialize a variable to keep track of the total number of bytes sent
     start = time.time() # Get the start time of the function
-        
+
+
+    # If the user provided the "num" argument   
     if args.num:
         size = args.num   # sets a variable 'size' to the value of args.num, which is passed as an argument to the function and specifies the total number of bytes to send
          
@@ -172,7 +204,7 @@ def client_send(sock, serverip,port):
            sock.send(data)    # Send the data over the socket
            byte_send +=len(data)        # Add the number of bytes sent to the total number of bytes sent  
    
-
+    # If the user provided the "time" and "interval" argument
     elif args.interval and args.time:
          data_sent = 0
              # Calculate the end time for sending data
@@ -206,6 +238,7 @@ def client_send(sock, serverip,port):
                  interval += args.interval
                  interval_start = elapsed_time
                  data_sent = 0
+
     end_time = time.time()   # records the end time of the data transfer
     duration = end_time - start  # calculates the duration of the data transfer
     sock.send("BYE".encode())        # Send "BYE" to signal the end of the transmission
