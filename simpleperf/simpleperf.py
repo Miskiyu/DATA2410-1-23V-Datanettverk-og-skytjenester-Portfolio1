@@ -73,7 +73,10 @@ def formater_num(val):
 
 #Fuction that takes in mode,elapsed_time and how much data send, and prints result
 def print_result(mode, addr, elapsed_time, byte_send):
-    bandwidth = (byte_send / 1000000 * 8) / elapsed_time  # This line calculates the bandwidth/rate in Mbps
+    bandwidth = (byte_send / 1000000 * 8) / elapsed_time  #   # Calculate the bandwidth by dividing byte_send by 1000000 and multiplying it by 8, and then dividing it by the elapsed time in seconds.
+    
+    total_data = 0
+    # Check if the argument format is "B", "KB", or "MB" and calculate total_data accordingly.
     if args.format == "B":
         total_data = byte_send
     elif args.format == "KB":
@@ -81,15 +84,19 @@ def print_result(mode, addr, elapsed_time, byte_send):
     else:
         total_data = byte_send / 1000000.0
 
+    #Check if the mode is "C" or "S" and set the headers accordingly.
     if mode == "C":
         headers = ['ID', 'Interval', 'Transfer', 'Bandwith']
     elif mode == "S":
         headers = ["ID", "Interval", "Recieved", "Rate"]
 
-    
+    # Create a list named "result" that contains four elements: server IP and port, interval, total_data and bandwidth.
+    # Use f-string to format the elements.
     result = [[f"{args.serverip}:{addr[1]}", f"0.0-{elapsed_time:.1f}", f" {total_data:.0f} {args.format}", f"{bandwidth:.2f} Mbps"]]
 
+    # Print the result in a tabular format with headers.
     print(tabulate(result, headers=headers))
+    # Print an empty line, so that threr will be space. 
     print(" ")
 
 
@@ -138,16 +145,23 @@ def server(host, port): #main method
     print('-------------------------------------------------')
     sock.listen() # listen for incoming connections
     while True: #always true, this will always loop, and wait for new cleints to connect
-        connectionSocket, addr = sock.accept() #Accepting a new connection
-        print(f"A simpleperf client with IP {addr[0]}:{str(addr[1])} is connected with {host}:{port} \n")
-        thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
-        thread.start()
+        try:
+
+            connectionSocket, addr = sock.accept() #Accepting a new connection
+        except:
+            print("could not connect")
+            connectionSocket.close()
+       
+        else:
+            thread= threading.Thread(target=handle_client, args =(connectionSocket,addr))
+            thread.start()
 
 
 
 
 
 def handle_client(connection,addr):#A client handler function, this function get's called once a new client joins, and a thread gets created (see main)
+    print(f"A simpleperf client with IP {addr[0]}:{str(addr[1])} is connected with {args.bind}:{args.port} \n")
     data_lengt=0
     start_time = time.time() # Start time for data transfer
     while True: # Loop forever until a break statement is encountered
