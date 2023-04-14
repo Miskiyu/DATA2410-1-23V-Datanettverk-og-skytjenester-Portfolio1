@@ -2,9 +2,7 @@
 Simpleperf 
 ================================================================
 
-Summary
--------
-Simpleperf is a simple program to test network performance between server and client. It can be used to mesaure the maximum bandwidht and how much data transferd between to host and  test the quality of network link. You can run simpleprf in to modes client mode and server mode
+Simpleperf is a simple program to test network performance between server and client. It can be used to mesaure the maximum bandwidht and how much data transferd between two host and  test the quality of network. You can run simpleprf in to modes client mode and server mode
 
 
 
@@ -22,7 +20,7 @@ To install tabulate:
 
 How to use Simpleperf
 ---------------
-Simpleperf can be run in either server mode or client mode. Each mode has different flags that can be used.  If you don't specify any options, Simpleperf will use default values.
+Simpleperf can be run in either server mode or client mode. Each mode has different flags that can be used. If you don't specify any flags, Simpleperf will use default values.
 
 
 ### Server mode: ###
