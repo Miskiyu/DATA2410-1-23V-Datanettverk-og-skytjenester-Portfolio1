@@ -36,7 +36,7 @@ The server has three other command-line options:
     -p, --port             specifies the port number to use
 
 ### Client mode: ###
-if you want to mesaure the network performance between client adn server, start Simpleperf in client mode by running:
+if you want to mesaure the network performance between client and server, start Simpleperf in client mode by running:
 
     - python simpleperf.py -c
     
