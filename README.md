@@ -7,7 +7,7 @@ Simpleperf is a simple program to test network performance between server and cl
 
 
 Dependencies
-----------------
+--------------
 Simpleperf uses the Tabulate library as a dependency. To use it, you need to have pip and then install tabulate.
 
 To install pip run this command in terminal:
@@ -19,7 +19,7 @@ To install tabulate:
     python -m pip install -U tabulate 
 
 How to use Simpleperf
----------------
+---------------------
 Simpleperf can be run in either server mode or client mode. Each mode has different flags that can be used. If you don't specify any flags, Simpleperf will use default values.
 
 
