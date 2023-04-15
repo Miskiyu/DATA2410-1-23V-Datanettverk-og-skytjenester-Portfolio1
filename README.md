@@ -44,7 +44,7 @@ if you want to mesaure the network performance between client and server, start 
 The client has five other command-line options:
 
     -f, --format           specifies the format for the output (B, KB or MB)
-    -b, --bind             specifies the IP address to bind to
+    -I, --serverip         specifies the ip address of the server
     -p, --port             specifies the port number to use
     -i, --interval         specifies the time interval (in seconds) between data transmissions
     -t, --time             specifies the total time (in seconds) to run the test
